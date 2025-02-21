@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "package": "com.aetherteam.ozone.mixin.mixins",
+  "minVersion": "0.8",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "ozone_utilities.refmap.json",
+  "mixins": [
+    "common.BlockItemMixin"
+  ],
+  "client": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "ozone_utilities:item/container_key"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "down": "minecraft:block/pale_oak_planks",
+    "east": "ozone_utilities:block/surveyor_table_side3",
+    "north": "ozone_utilities:block/surveyor_table_side3",
+    "particle": "ozone_utilities:block/surveyor_table_side3",
+    "south": "ozone_utilities:block/surveyor_table_side1",
+    "up": "ozone_utilities:block/surveyor_table_top",
+    "west": "ozone_utilities:block/surveyor_table_side2"
+  }
+}

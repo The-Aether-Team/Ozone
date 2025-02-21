@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "#": "#c:nuggets/iron",
+    "@": "#c:ingots/copper"
+  },
+  "pattern": [
+    "@",
+    "#"
+  ],
+  "result": {
+    "count": 1,
+    "id": "ozone_utilities:container_key"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "ozone_utilities:block/surveyor_table"
+    }
+  }
+}
