@@ -29,14 +29,14 @@ public class ContainerKeyItem extends Item {
         if (!level.isClientSide()) {
             if (level.getBlockEntity(pos) instanceof BaseContainerBlockEntity blockEntity) {
                 blockEntity.getData(OzoneDataAttachments.OWNER.get()).ifPresent(uuid -> {
-                    if (player.getPermissionLevel() < 1) {
-                        if (player.getUUID().equals(uuid)) {
-                            if (stack.is(Ozone.CONTAINER_KEY)) {
-                                blockEntity.setData(OzoneDataAttachments.LOCKED.get(), !blockEntity.getData(OzoneDataAttachments.LOCKED.get()));
-                                event.setCanceled(true);
-                                event.setCancellationResult(InteractionResult.SUCCESS_SERVER);
-                            }
-                        } else if (blockEntity.getData(OzoneDataAttachments.LOCKED.get())) {
+                    if (player.getUUID().equals(uuid)) {
+                        if (stack.is(Ozone.CONTAINER_KEY)) {
+                            blockEntity.setData(OzoneDataAttachments.LOCKED.get(), !blockEntity.getData(OzoneDataAttachments.LOCKED.get())); //todo packet. gonna need to figure out how to sync on player login though
+                            event.setCanceled(true);
+                            event.setCancellationResult(InteractionResult.SUCCESS_SERVER);
+                        }
+                    } else if (blockEntity.getData(OzoneDataAttachments.LOCKED.get())) {
+                        if (player.getPermissionLevel() < 1) {
                             event.setCanceled(true);
                             event.setCancellationResult(InteractionResult.FAIL);
                             player.displayClientMessage(Component.literal("test"), true);

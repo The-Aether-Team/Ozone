@@ -14,6 +14,8 @@ import java.util.UUID;
 public class OzoneDataAttachments {
     public static final DeferredRegister<AttachmentType<?>> ATTACHMENTS = DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, Ozone.MODID);
 
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<OzonePlayerAttachment>> PLAYER = ATTACHMENTS.register("player", () -> AttachmentType.builder((holder) -> new OzonePlayerAttachment()).serialize(OzonePlayerAttachment.CODEC).build());
+
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<Boolean>> LOCKED = ATTACHMENTS.register("locked", () -> AttachmentType.builder((holder) -> false).serialize(Codec.BOOL).build());
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<Optional<UUID>>> OWNER = ATTACHMENTS.register("owner", () -> AttachmentType.<Optional<UUID>>builder((holder) -> Optional.empty()).serialize(UUIDUtil.CODEC.optionalFieldOf("uuid").codec()).build());
 }

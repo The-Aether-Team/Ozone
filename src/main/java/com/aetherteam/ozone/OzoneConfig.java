@@ -3,7 +3,6 @@ package com.aetherteam.ozone;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
-@EventBusSubscriber(modid = Ozone.MODID, bus = EventBusSubscriber.Bus.MOD)
 public class OzoneConfig {
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
 //
