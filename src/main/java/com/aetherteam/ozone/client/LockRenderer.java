@@ -50,7 +50,7 @@ public class LockRenderer {
                 BlockPos playerPos = player.blockPosition();
                 ItemStack stack = player.getMainHandItem();
                 // Check to remove overlays from the map.
-                updatePositions(player, playerPos, level, stack, range, !stack.is(Ozone.CONTAINER_KEY)); // Check to add overlays to the map.
+                updatePositions(player, playerPos, level, range, !stack.is(Ozone.CONTAINER_KEY)); // Check to add overlays to the map.
                 for (int i = 0; i < positionsForTypes.size(); i++) {
                     renderOverlays(level, poseStack, renderBuffers, camera, frustum, i); // Render any overlays at positions in the map.
                 }
@@ -58,7 +58,7 @@ public class LockRenderer {
         }
     }
 
-    private static void updatePositions(Player player, BlockPos playerPos, ClientLevel level, ItemStack stack, int range, boolean depopulate) {
+    private static void updatePositions(Player player, BlockPos playerPos, ClientLevel level, int range, boolean depopulate) {
         // Initial setup of the different IDs in the map.
         positionsForTypes.putIfAbsent(0, new ArrayList<>());
         positionsForTypes.putIfAbsent(1, new ArrayList<>());
