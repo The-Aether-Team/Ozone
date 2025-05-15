@@ -20,7 +20,7 @@ import net.neoforged.neoforge.event.entity.EntityTeleportEvent;
 import java.util.EnumSet;
 
 @EventBusSubscriber(modid = Ozone.MODID, bus = EventBusSubscriber.Bus.GAME)
-public class OzoneCommands { //todo more detailed failure messages for everything like home already exists, etc.
+public class OzoneCommands {
     @SubscribeEvent
     public static void registerCommands(RegisterCommandsEvent event) {
         BackCommand.register(event.getDispatcher());

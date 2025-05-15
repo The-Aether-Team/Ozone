@@ -15,7 +15,7 @@ import net.minecraft.server.level.ServerPlayer;
 import java.util.Optional;
 import java.util.UUID;
 
-public class TpaCommand { //todo get the argument to not show selectors because thats not good
+public class TpaCommand { //todo prevent tping to self and include more detailed failure messages
     private static final SimpleCommandExceptionType ERROR_TELEPORT_ACCEPT = new SimpleCommandExceptionType(Component.translatable("commands.ozone_utilities.tpa.accept.error"));
     private static final SimpleCommandExceptionType ERROR_TELEPORT_DENY = new SimpleCommandExceptionType(Component.translatable("commands.ozone_utilities.tpa.deny.error"));
     private static final SimpleCommandExceptionType ERROR_TELEPORT_CANCEL = new SimpleCommandExceptionType(Component.translatable("commands.ozone_utilities.tpa.cancel.error"));
@@ -51,7 +51,7 @@ public class TpaCommand { //todo get the argument to not show selectors because 
         return 1;
     }
 
-    public static int accept(CommandSourceStack source) throws CommandSyntaxException {
+    public static int accept(CommandSourceStack source) throws CommandSyntaxException { //todo sometimes this seems to get switched around
         if (source.getEntityOrException() instanceof ServerPlayer requestingPlayer) {
             if (requestingPlayer.getData(OzoneDataAttachments.PLAYER).getOtherPlayerRequestingTeleport().isPresent()) {
                 UUID otherUUID = requestingPlayer.getData(OzoneDataAttachments.PLAYER).getOtherPlayerRequestingTeleport().get();

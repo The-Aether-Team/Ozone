@@ -22,6 +22,8 @@ import java.util.Map;
 
 public class WarpCommand {
     private static final SimpleCommandExceptionType ERROR_WARP = new SimpleCommandExceptionType(Component.translatable("commands.ozone_utilities.warp.error"));
+    private static final SimpleCommandExceptionType ERROR_WARP_DOESNT_EXIST = new SimpleCommandExceptionType(Component.translatable("commands.ozone_utilities.warp.error.doesnt_exist"));
+    private static final SimpleCommandExceptionType ERROR_WARP_ALREADY_EXISTS = new SimpleCommandExceptionType(Component.translatable("commands.ozone_utilities.warp.error.already_exists"));
     private static final SimpleCommandExceptionType ERROR_WARP_SET = new SimpleCommandExceptionType(Component.translatable("commands.ozone_utilities.warp.set.error"));
     private static final SimpleCommandExceptionType ERROR_WARP_DELETE = new SimpleCommandExceptionType(Component.translatable("commands.ozone_utilities.warp.delete.error"));
 
@@ -44,6 +46,8 @@ public class WarpCommand {
                         source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.warp", sender.getDisplayName(), warpName), false);
                         return 1;
                     }
+                } else {
+                    throw ERROR_WARP_DOESNT_EXIST.create();
                 }
             }
         }
@@ -61,6 +65,8 @@ public class WarpCommand {
                     overworld.getData(OzoneDataAttachments.LEVEL).addWarp(warpName, GlobalPos.of(dimension, pos));
                     source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.warp.set", warpName, pos.getX(), pos.getY(), pos.getZ(), dimension.location().toString()), true);
                     return 1;
+                } else {
+                    throw ERROR_WARP_ALREADY_EXISTS.create();
                 }
             }
         }
@@ -76,6 +82,8 @@ public class WarpCommand {
                     overworld.getData(OzoneDataAttachments.LEVEL).removeWarp(warpName);
                     source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.warp.delete", warpName), true);
                     return 1;
+                } else {
+                    throw ERROR_WARP_DOESNT_EXIST.create();
                 }
             }
         }

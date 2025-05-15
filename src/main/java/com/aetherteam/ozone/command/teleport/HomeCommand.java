@@ -21,6 +21,8 @@ import java.util.Map;
 
 public class HomeCommand { //todo limits
     private static final SimpleCommandExceptionType ERROR_HOME = new SimpleCommandExceptionType(Component.translatable("commands.ozone_utilities.home.error"));
+    private static final SimpleCommandExceptionType ERROR_HOME_DOESNT_EXIST = new SimpleCommandExceptionType(Component.translatable("commands.ozone_utilities.home.error.doesnt_exist"));
+    private static final SimpleCommandExceptionType ERROR_HOME_ALREADY_EXISTS = new SimpleCommandExceptionType(Component.translatable("commands.ozone_utilities.home.error.already_exists"));
     private static final SimpleCommandExceptionType ERROR_HOME_SET = new SimpleCommandExceptionType(Component.translatable("commands.ozone_utilities.home.set.error"));
     private static final SimpleCommandExceptionType ERROR_HOME_DELETE = new SimpleCommandExceptionType(Component.translatable("commands.ozone_utilities.home.delete.error"));
 
@@ -44,6 +46,8 @@ public class HomeCommand { //todo limits
                     source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.home", sender.getDisplayName(), homeName), false);
                     return 1;
                 }
+            } else {
+                throw ERROR_HOME_DOESNT_EXIST.create();
             }
         }
         throw ERROR_HOME.create();
@@ -58,6 +62,8 @@ public class HomeCommand { //todo limits
                 sender.getData(OzoneDataAttachments.PLAYER).addHome(sender, homeName, GlobalPos.of(dimension, pos));
                 source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.home.set", homeName, pos.getX(), pos.getY(), pos.getZ(), dimension.location().toString()), false);
                 return 1;
+            } else {
+                throw ERROR_HOME_ALREADY_EXISTS.create();
             }
         }
         throw ERROR_HOME_SET.create();
@@ -70,6 +76,8 @@ public class HomeCommand { //todo limits
                 sender.getData(OzoneDataAttachments.PLAYER).removeHome(sender, homeName);
                 source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.home.delete", homeName), false);
                 return 1;
+            } else {
+                throw ERROR_HOME_DOESNT_EXIST.create();
             }
         }
         throw ERROR_HOME_DELETE.create();

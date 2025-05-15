@@ -17,6 +17,7 @@ public class OzoneLanguageData extends NitrogenLanguageProvider {
 
         this.addCommand("back", "Returned to previous position");
         this.addCommand("back.error", "No valid previous position");
+
         this.addCommand("tpa.request.source", "Requested teleportation to %s");
         this.addCommand("tpa.request.target", "%s requested to teleport to you");
         this.addCommand("tpa.here.source", "Requested %s teleport to you");
@@ -30,24 +31,33 @@ public class OzoneLanguageData extends NitrogenLanguageProvider {
         this.addCommand("tpa.cancel.source", "Cancelled teleportation to %s");
         this.addCommand("tpa.cancel.target", "%s cancelled teleportation to you");
         this.addCommand("tpa.cancel.error", "Failed to cancel teleport request");
+
         this.addCommand("rtp", "Teleported to random location");
         this.addCommand("rtp.search", "Searching for random location");
+
         this.addCommand("spawn", "Teleported %s to the server spawn");
         this.addCommand("spawn.set", "Set the server spawn to %s, %s, %s in %s");
         this.addCommand("spawn.delete", "Deleted the server spawn");
         this.addCommand("spawn.error", "Failed to teleport to server spawn");
+        this.addCommand("spawn.error.doesnt_exist", "No server spawn exists");
         this.addCommand("spawn.set.error", "Failed to set server spawn");
         this.addCommand("spawn.delete.error", "Failed to delete server spawn");
+
         this.addCommand("home", "Teleported %s to home \"%s\"");
         this.addCommand("home.set", "Created home \"%s\" at %s, %s, %s in %s");
         this.addCommand("home.delete", "Deleted home \"%s\"");
         this.addCommand("home.error", "Failed to teleport to home");
+        this.addCommand("home.error.doesnt_exist", "Home doesn't exist");
+        this.addCommand("home.error.already_exists", "Home already exists");
         this.addCommand("home.set.error", "Failed to set home");
         this.addCommand("home.delete.error", "Failed to delete home");
+
         this.addCommand("warp", "Teleported %s to warp \"%s\"");
         this.addCommand("warp.set", "Created warp \"%s\" at %s, %s, %s in %s");
         this.addCommand("warp.delete", "Deleted warp \"%s\"");
         this.addCommand("warp.error", "Failed to teleport to warp");
+        this.addCommand("warp.error.doesnt_exist", "Warp doesn't exist");
+        this.addCommand("warp.error.already_exists", "Warp already exists");
         this.addCommand("warp.set.error", "Failed to set warp");
         this.addCommand("warp.delete.error", "Failed to delete warp");
 

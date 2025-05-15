@@ -20,14 +20,14 @@ import java.util.Optional;
 
 public class SpawnCommand {
     private static final SimpleCommandExceptionType ERROR_SPAWN = new SimpleCommandExceptionType(Component.translatable("commands.ozone_utilities.spawn.error"));
+    private static final SimpleCommandExceptionType ERROR_SPAWN_DOESNT_EXIST = new SimpleCommandExceptionType(Component.translatable("commands.ozone_utilities.spawn.error.doesnt_exist"));
     private static final SimpleCommandExceptionType ERROR_SPAWN_SET = new SimpleCommandExceptionType(Component.translatable("commands.ozone_utilities.spawn.set.error"));
     private static final SimpleCommandExceptionType ERROR_SPAWN_DELETE = new SimpleCommandExceptionType(Component.translatable("commands.ozone_utilities.spawn.delete.error"));
 
-    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) { //todo change command names for consistency
-        dispatcher.register(Commands.literal("spawn").executes(stack -> teleportToSpawn(stack.getSource()))
-                .then(Commands.literal("set").executes(stack -> setSpawn(stack.getSource())).requires((source) -> source.hasPermission(3)))
-                .then(Commands.literal("delete").executes(stack -> deleteSpawn(stack.getSource())).requires((source) -> source.hasPermission(3)))
-        );
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+        dispatcher.register(Commands.literal("spawn").executes(stack -> teleportToSpawn(stack.getSource())));
+        dispatcher.register(Commands.literal("setspawn").executes(stack -> setSpawn(stack.getSource())).requires((source) -> source.hasPermission(3)));
+        dispatcher.register(Commands.literal("delspawn").executes(stack -> deleteSpawn(stack.getSource())).requires((source) -> source.hasPermission(3)));
     }
 
     private static int teleportToSpawn(CommandSourceStack source) throws CommandSyntaxException {
@@ -42,6 +42,8 @@ public class SpawnCommand {
                         source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.spawn", sender.getDisplayName()), false);
                         return 1;
                     }
+                } else {
+                    throw ERROR_SPAWN_DOESNT_EXIST.create();
                 }
             }
         }
@@ -71,6 +73,8 @@ public class SpawnCommand {
                     overworld.getData(OzoneDataAttachments.LEVEL).clearServerSpawn();
                     source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.spawn.delete"), true);
                     return 1;
+                } else {
+                    throw ERROR_SPAWN_DOESNT_EXIST.create();
                 }
             }
         }
