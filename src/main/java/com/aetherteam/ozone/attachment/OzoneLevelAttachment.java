@@ -33,7 +33,7 @@ public class OzoneLevelAttachment {
         this.serverSpawn = Optional.of(serverSpawn);
     }
 
-    public void clearPreviousPosition() {
+    public void clearServerSpawn() {
         this.serverSpawn = Optional.empty();
     }
 
@@ -47,5 +47,9 @@ public class OzoneLevelAttachment {
 
     public void addWarp(String title, BlockPos warp) {
         this.warps.put(title, warp);
+    }
+
+    public void removeWarp(String title) {
+        this.warps.remove(title);
     }
 }

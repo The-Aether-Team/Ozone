@@ -1,5 +1,11 @@
 {
   "block.ozone_utilities.surveyor_table": "Surveyor Table",
+  "commands.ozone_utilities.back.error": "No valid previous position",
+  "commands.ozone_utilities.rtp": "Teleported %s to random location",
+  "commands.ozone_utilities.teleport.accept.error": "Failed to cancel teleport request",
+  "commands.ozone_utilities.teleport.cancel": "Cancelled teleportation to %s",
+  "commands.ozone_utilities.teleport.cancel.error": "Failed to cancel teleport request",
+  "commands.ozone_utilities.teleport.request": "Requested teleportation to %s",
   "item.ozone_utilities.container_key": "Container Key",
   "pack.ozone_utilities.mod.description": "Ozone Resources"
 }

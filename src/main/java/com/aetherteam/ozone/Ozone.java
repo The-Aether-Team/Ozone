@@ -43,23 +43,30 @@ public class Ozone {
 
     public static final DeferredItem<Item> CONTAINER_KEY = ITEMS.registerItem("container_key", ContainerKeyItem::new, new Item.Properties().stacksTo(1));
 
-    public Ozone(IEventBus modEventBus, ModContainer modContainer) {
-        modEventBus.addListener(OzoneData::data);
-        modEventBus.addListener(this::commonSetup);
+    public Ozone(ModContainer mod, IEventBus bus, Dist dist) {
+        bus.addListener(OzoneData::data);
+        bus.addListener(this::commonSetup);
+        bus.addListener(this::addCreative);
 
-        BLOCKS.register(modEventBus);
-        ITEMS.register(modEventBus);
-        OzoneDataAttachments.ATTACHMENTS.register(modEventBus);
+        BLOCKS.register(bus);
+        ITEMS.register(bus);
+        OzoneDataAttachments.ATTACHMENTS.register(bus);
 
         NeoForge.EVENT_BUS.register(this);
 
-        modEventBus.addListener(this::addCreative);
+        this.eventSetup(bus);
 
-        modContainer.registerConfig(ModConfig.Type.COMMON, OzoneConfig.SPEC);
+        mod.registerConfig(ModConfig.Type.COMMON, OzoneConfig.SPEC);
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
 
+    }
+
+    public void eventSetup(IEventBus neoBus) {
+        IEventBus bus = NeoForge.EVENT_BUS;
+
+        OzoneEventListeners.listen(bus);
     }
 
     private void addCreative(BuildCreativeModeTabContentsEvent event) {

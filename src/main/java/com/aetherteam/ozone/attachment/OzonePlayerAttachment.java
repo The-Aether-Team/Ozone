@@ -11,9 +11,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 public class OzonePlayerAttachment {
-    private Optional<BlockPos> previousPosition; //todo mixin the teleport method to assign this value before teleporting. or use the event hook
+    private Optional<BlockPos> previousPosition;
     private Optional<UUID> otherPlayerRequestingTeleport;
-    private Optional<UUID> requestingTeleportToOtherPlayer; //todo check two ways that this matches for the other player and the other player has matching of the above field.
+    private Optional<UUID> requestingTeleportToOtherPlayer;
     private Map<String, BlockPos> homes;
 
     public static final Codec<OzonePlayerAttachment> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -45,7 +45,7 @@ public class OzonePlayerAttachment {
         this.previousPosition = Optional.of(previousPosition);
     }
 
-    public void clearPreviousPosition() {
+    public void clearPreviousPosition() { //todo
         this.previousPosition = Optional.empty();
     }
 
@@ -57,12 +57,20 @@ public class OzonePlayerAttachment {
         this.otherPlayerRequestingTeleport = Optional.of(otherPlayerRequestingTeleport);
     }
 
+    public void clearOtherPlayerRequestingTeleport() {
+        this.otherPlayerRequestingTeleport = Optional.empty();
+    }
+
     public Optional<UUID> getRequestingTeleportToOtherPlayer() {
         return this.requestingTeleportToOtherPlayer;
     }
 
     public void setRequestingTeleportToOtherPlayer(UUID requestingTeleportToOtherPlayer) {
         this.requestingTeleportToOtherPlayer = Optional.of(requestingTeleportToOtherPlayer);
+    }
+
+    public void clearRequestingTeleportToOtherPlayer() {
+        this.requestingTeleportToOtherPlayer = Optional.empty();
     }
 
     public Map<String, BlockPos> getHomes() {
@@ -75,5 +83,9 @@ public class OzonePlayerAttachment {
 
     public void addHome(String title, BlockPos warp) {
         this.homes.put(title, warp);
+    }
+
+    public void removeHome(String title) {
+        this.homes.remove(title);
     }
 }
