@@ -38,7 +38,7 @@ public class OzoneEventListeners {
         double prevZ = event.getPrevZ();
 
         if (entity instanceof ServerPlayer serverPlayer) {
-            PlayerHooks.playerTeleport(serverPlayer, prevX, prevY, prevZ);
+            PlayerHooks.playerTeleport(serverPlayer, serverPlayer.level().dimension(), prevX, prevY, prevZ);
         }
     }
 

@@ -5,7 +5,9 @@ import com.aetherteam.ozone.network.packet.clientbound.WarpSuggestionPacket;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.GlobalPos;
 import net.minecraft.core.UUIDUtil;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -13,17 +15,17 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import java.util.*;
 
 public class OzonePlayerAttachment {
-    private Optional<BlockPos> previousPosition;
+    private Optional<GlobalPos> previousPosition;
     private Optional<UUID> otherPlayerRequestingTeleport;
     private Optional<UUID> requestingTeleportToOtherPlayer;
-    private Map<String, BlockPos> homes;
+    private Map<String, GlobalPos> homes;
     private List<String> homeCommandSuggestions;
 
     public static final Codec<OzonePlayerAttachment> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            BlockPos.CODEC.optionalFieldOf("previous_position").forGetter(OzonePlayerAttachment::getPreviousPosition),
+            GlobalPos.CODEC.optionalFieldOf("previous_position").forGetter(OzonePlayerAttachment::getPreviousPosition),
             UUIDUtil.CODEC.optionalFieldOf("other_player_requesting_teleport").forGetter(OzonePlayerAttachment::getOtherPlayerRequestingTeleport),
             UUIDUtil.CODEC.optionalFieldOf("requesting_teleport_to_other_player").forGetter(OzonePlayerAttachment::getRequestingTeleportToOtherPlayer),
-            Codec.unboundedMap(Codec.STRING, BlockPos.CODEC).fieldOf("homes").forGetter(OzonePlayerAttachment::getHomes)
+            Codec.unboundedMap(Codec.STRING, GlobalPos.CODEC).fieldOf("homes").forGetter(OzonePlayerAttachment::getHomes)
     ).apply(instance, OzonePlayerAttachment::new));
 
     private boolean shouldSyncAfterJoin;
@@ -36,7 +38,7 @@ public class OzonePlayerAttachment {
         this.homeCommandSuggestions = new ArrayList<>();
     }
 
-    public OzonePlayerAttachment(Optional<BlockPos> previousPosition, Optional<UUID> otherPlayerRequestingTeleport, Optional<UUID> requestingTeleportToOtherPlayer, Map<String, BlockPos> homes) {
+    public OzonePlayerAttachment(Optional<GlobalPos> previousPosition, Optional<UUID> otherPlayerRequestingTeleport, Optional<UUID> requestingTeleportToOtherPlayer, Map<String, GlobalPos> homes) {
         this.previousPosition = previousPosition;
         this.otherPlayerRequestingTeleport = otherPlayerRequestingTeleport;
         this.requestingTeleportToOtherPlayer = requestingTeleportToOtherPlayer;
@@ -60,17 +62,22 @@ public class OzonePlayerAttachment {
         if (this.shouldSyncAfterJoin) {
             if (player instanceof ServerPlayer serverPlayer) {
                 PacketDistributor.sendToPlayer(serverPlayer, new HomeSuggestionPacket(this.homeCommandSuggestions));
-                PacketDistributor.sendToPlayer(serverPlayer, new WarpSuggestionPacket(serverPlayer.level().getData(OzoneDataAttachments.LEVEL).getWarpCommandSuggestions()));
+                if (serverPlayer.getServer() != null) {
+                    ServerLevel overworld = OzoneLevelAttachment.getOverworld(serverPlayer.getServer());
+                    if (overworld != null) {
+                        PacketDistributor.sendToPlayer(serverPlayer, new WarpSuggestionPacket(overworld.getData(OzoneDataAttachments.LEVEL).getWarpCommandSuggestions()));
+                    }
+                }
             }
             this.shouldSyncAfterJoin = false;
         }
     }
 
-    public Optional<BlockPos> getPreviousPosition() {
+    public Optional<GlobalPos> getPreviousPosition() {
         return this.previousPosition;
     }
 
-    public void setPreviousPosition(BlockPos previousPosition) {
+    public void setPreviousPosition(GlobalPos previousPosition) {
         this.previousPosition = Optional.of(previousPosition);
     }
 
@@ -102,17 +109,17 @@ public class OzonePlayerAttachment {
         this.requestingTeleportToOtherPlayer = Optional.empty();
     }
 
-    public Map<String, BlockPos> getHomes() {
+    public Map<String, GlobalPos> getHomes() {
         return this.homes;
     }
 
-    public void setHomes(ServerPlayer serverPlayer, Map<String, BlockPos> warps) {
+    public void setHomes(ServerPlayer serverPlayer, Map<String, GlobalPos> warps) {
         this.homes = warps;
         this.homeCommandSuggestions = warps.keySet().stream().toList();
         PacketDistributor.sendToPlayer(serverPlayer, new HomeSuggestionPacket(this.homeCommandSuggestions));
     }
 
-    public void addHome(ServerPlayer serverPlayer, String title, BlockPos warp) {
+    public void addHome(ServerPlayer serverPlayer, String title, GlobalPos warp) {
         this.homes.put(title, warp);
         this.homeCommandSuggestions.add(title);
         PacketDistributor.sendToPlayer(serverPlayer, new HomeSuggestionPacket(this.homeCommandSuggestions));

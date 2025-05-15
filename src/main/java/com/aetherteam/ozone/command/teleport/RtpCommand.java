@@ -23,15 +23,16 @@ public class RtpCommand { //todo cooldown/cost
             WorldBorder border = source.getLevel().getWorldBorder();
             BlockPos newPos;
             do {
+                source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.rtp.search"), false);
                 double randomX = border.getCenterX() + random.nextInt((int) (border.getSize() / 2)) * (random.nextBoolean() ? 1 : -1);
                 double randomZ = border.getCenterZ() + random.nextInt((int) (border.getSize() / 2)) * (random.nextBoolean() ? 1 : -1);
                 double randomY = source.getLevel().getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, (int) randomX, (int) randomZ);
                 BlockPos randomPos = BlockPos.containing(randomX, randomY, randomZ);
                 newPos = sender.adjustSpawnLocation(source.getLevel(), randomPos);
-            } while (newPos.getY() <= source.getLevel().getSeaLevel());
+            } while (!sender.level().canSeeSky(newPos));
 
             OzoneCommands.performTeleport(sender, source.getLevel(), newPos.getX(), newPos.getY(), newPos.getZ(), sender.getYRot(), sender.getXRot());
-            source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.rtp", sender.getDisplayName()), false);
+            source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.rtp"), false);
         }
         return 1;
     }
