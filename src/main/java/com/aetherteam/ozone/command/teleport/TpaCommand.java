@@ -153,10 +153,10 @@ public class TpaCommand {
         throw ERROR_TELEPORT_CANCEL.create();
     }
 
-    private static int teleportToEntity(CommandSourceStack stack, ServerPlayer target, ServerPlayer entity) {
-        OzoneCommands.performTeleport(target, (ServerLevel) entity.level(), entity.getX(), entity.getY(), entity.getZ(), entity.getYRot(), entity.getXRot());
-        stack.sendSuccess(() -> Component.translatable("commands.ozone_utilities.tpa.accept.source", target.getDisplayName()), false);
-        target.sendSystemMessage(Component.translatable("commands.ozone_utilities.tpa.accept.target", entity.getDisplayName()));
+    private static int teleportToEntity(CommandSourceStack stack, ServerPlayer teleportTo, ServerPlayer entity) {
+        OzoneCommands.performTeleport(entity, (ServerLevel) teleportTo.level(), teleportTo.getX(), teleportTo.getY(), teleportTo.getZ(), teleportTo.getYRot(), teleportTo.getXRot());
+        stack.sendSuccess(() -> Component.translatable("commands.ozone_utilities.tpa.accept.source", teleportTo.getDisplayName()), false);
+        teleportTo.sendSystemMessage(Component.translatable("commands.ozone_utilities.tpa.accept.target", entity.getDisplayName()));
         return 1;
     }
 }
