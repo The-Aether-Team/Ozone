@@ -54,7 +54,7 @@ public class HomeCommand { //todo limits
             Map<String, GlobalPos> homes = sender.getData(OzoneDataAttachments.PLAYER).getHomes();
             if (!homes.containsKey(homeName)) {
                 ResourceKey<Level> dimension = sender.level().dimension();
-                BlockPos pos = sender.blockPosition();
+                BlockPos pos = OzoneCommands.getCorrectPosition(sender);
                 sender.getData(OzoneDataAttachments.PLAYER).addHome(sender, homeName, GlobalPos.of(dimension, pos));
                 source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.home.set", homeName, pos.getX(), pos.getY(), pos.getZ(), dimension.location().toString()), false);
                 return 1;

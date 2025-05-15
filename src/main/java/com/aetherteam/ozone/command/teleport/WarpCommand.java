@@ -57,7 +57,7 @@ public class WarpCommand {
                 Map<String, GlobalPos> warps = overworld.getData(OzoneDataAttachments.LEVEL).getWarps();
                 if (!warps.containsKey(warpName)) {
                     ResourceKey<Level> dimension = sender.level().dimension();
-                    BlockPos pos = sender.blockPosition();
+                    BlockPos pos = OzoneCommands.getCorrectPosition(sender);
                     overworld.getData(OzoneDataAttachments.LEVEL).addWarp(warpName, GlobalPos.of(dimension, pos));
                     source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.warp.set", warpName, pos.getX(), pos.getY(), pos.getZ(), dimension.location().toString()), true);
                     return 1;

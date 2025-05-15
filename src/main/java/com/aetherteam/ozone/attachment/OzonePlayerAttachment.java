@@ -4,7 +4,6 @@ import com.aetherteam.ozone.network.packet.clientbound.HomeSuggestionPacket;
 import com.aetherteam.ozone.network.packet.clientbound.WarpSuggestionPacket;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.server.level.ServerLevel;

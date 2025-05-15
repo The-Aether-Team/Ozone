@@ -23,7 +23,7 @@ public class SpawnCommand {
     private static final SimpleCommandExceptionType ERROR_SPAWN_SET = new SimpleCommandExceptionType(Component.translatable("commands.ozone_utilities.spawn.set.error"));
     private static final SimpleCommandExceptionType ERROR_SPAWN_DELETE = new SimpleCommandExceptionType(Component.translatable("commands.ozone_utilities.spawn.delete.error"));
 
-    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) { //todo change command names for consistency
         dispatcher.register(Commands.literal("spawn").executes(stack -> teleportToSpawn(stack.getSource()))
                 .then(Commands.literal("set").executes(stack -> setSpawn(stack.getSource())).requires((source) -> source.hasPermission(3)))
                 .then(Commands.literal("delete").executes(stack -> deleteSpawn(stack.getSource())).requires((source) -> source.hasPermission(3)))
@@ -53,7 +53,7 @@ public class SpawnCommand {
             ServerLevel overworld = OzoneLevelAttachment.getOverworld(source.getServer());
             if (overworld != null) {
                 ResourceKey<Level> dimension = sender.level().dimension();
-                BlockPos pos = sender.blockPosition();
+                BlockPos pos = OzoneCommands.getCorrectPosition(sender);
                 overworld.getData(OzoneDataAttachments.LEVEL).setServerSpawn(GlobalPos.of(dimension, pos));
                 source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.spawn.set", pos.getX(), pos.getY(), pos.getZ(), dimension.location().toString()), true);
                 return 1;

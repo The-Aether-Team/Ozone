@@ -40,7 +40,7 @@ public class TpaCommand { //todo get the argument to not show selectors because 
         return 1;
     }
 
-    public static int here(CommandSourceStack source, ServerPlayer otherPlayer) throws CommandSyntaxException {
+    public static int here(CommandSourceStack source, ServerPlayer otherPlayer) throws CommandSyntaxException { // todo THIS IS BROKEN
         if (source.getEntityOrException() instanceof ServerPlayer sender) {
             source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.tpa.here.source", otherPlayer.getDisplayName()), false);
             otherPlayer.sendSystemMessage(Component.translatable("commands.ozone_utilities.tpa.here.target", sender.getDisplayName()));
@@ -66,7 +66,7 @@ public class TpaCommand { //todo get the argument to not show selectors because 
         throw ERROR_TELEPORT_ACCEPT.create();
     }
 
-    public static int deny(CommandSourceStack source) throws CommandSyntaxException { //todo potentially a cleaner way to do this.
+    public static int deny(CommandSourceStack source) throws CommandSyntaxException { //todo this is broken
         if (source.getEntityOrException() instanceof ServerPlayer sender) {
             Optional<UUID> otherUUID = sender.getData(OzoneDataAttachments.PLAYER).getRequestingTeleportToOtherPlayer();
             if (otherUUID.isPresent()) {
@@ -84,7 +84,7 @@ public class TpaCommand { //todo get the argument to not show selectors because 
         throw ERROR_TELEPORT_DENY.create();
     }
 
-    public static int cancel(CommandSourceStack source) throws CommandSyntaxException { //todo potentially a cleaner way to do this.
+    public static int cancel(CommandSourceStack source) throws CommandSyntaxException {
         if (source.getEntityOrException() instanceof ServerPlayer sender) {
             Optional<UUID> otherUUID = sender.getData(OzoneDataAttachments.PLAYER).getOtherPlayerRequestingTeleport();
             if (otherUUID.isPresent()) {
@@ -92,8 +92,8 @@ public class TpaCommand { //todo get the argument to not show selectors because 
                 if (otherPlayer != null) {
                     otherPlayer.getData(OzoneDataAttachments.PLAYER).clearOtherPlayerRequestingTeleport();
 
-                    source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.cancel.source", otherPlayer.getDisplayName()), true);
-                    otherPlayer.sendSystemMessage(Component.translatable("commands.ozone_utilities.cancel.source", sender.getDisplayName()));
+                    source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.tpa.cancel.source", otherPlayer.getDisplayName()), true);
+                    otherPlayer.sendSystemMessage(Component.translatable("commands.ozone_utilities.tpa.cancel.target", sender.getDisplayName()));
                 }
                 sender.getData(OzoneDataAttachments.PLAYER).clearRequestingTeleportToOtherPlayer();
                 return 1;
@@ -102,7 +102,7 @@ public class TpaCommand { //todo get the argument to not show selectors because 
         throw ERROR_TELEPORT_CANCEL.create();
     }
 
-    private static int teleportToEntity(CommandSourceStack stack, ServerPlayer target, ServerPlayer entity) {
+    private static int teleportToEntity(CommandSourceStack stack, ServerPlayer target, ServerPlayer entity) { //todo the messsaging is wrong sometimes probably based on tpa or tpahere differences
         OzoneCommands.performTeleport(target, (ServerLevel) entity.level(), entity.getX(), entity.getY(), entity.getZ(), entity.getYRot(), entity.getXRot());
         stack.sendSuccess(() -> Component.translatable("commands.ozone_utilities.tpa.accept.source", target.getDisplayName()), false);
         target.sendSystemMessage(Component.translatable("commands.ozone_utilities.tpa.accept.target", entity.getDisplayName()));

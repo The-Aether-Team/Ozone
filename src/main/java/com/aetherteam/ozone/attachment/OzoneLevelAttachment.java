@@ -1,11 +1,8 @@
 package com.aetherteam.ozone.attachment;
 
-import com.aetherteam.ozone.network.packet.clientbound.HomeSuggestionPacket;
 import com.aetherteam.ozone.network.packet.clientbound.WarpSuggestionPacket;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
