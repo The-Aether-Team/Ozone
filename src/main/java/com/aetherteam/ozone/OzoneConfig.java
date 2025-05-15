@@ -1,6 +1,5 @@
 package com.aetherteam.ozone;
 
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 public class OzoneConfig {

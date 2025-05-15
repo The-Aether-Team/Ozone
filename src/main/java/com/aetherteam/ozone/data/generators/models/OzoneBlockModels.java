@@ -1,6 +1,6 @@
 package com.aetherteam.ozone.data.generators.models;
 
-import com.aetherteam.ozone.Ozone;
+import com.aetherteam.ozone.block.OzoneBlocks;
 import net.minecraft.client.data.models.BlockModelGenerators;
 import net.minecraft.client.data.models.ItemModelOutput;
 import net.minecraft.client.data.models.blockstates.BlockStateGenerator;
@@ -26,13 +26,13 @@ public class OzoneBlockModels extends BlockModelGenerators {
 
     public void createSurveyorTable() {
         TextureMapping textureMapping = new TextureMapping()
-                .put(TextureSlot.PARTICLE, TextureMapping.getBlockTexture(Ozone.SURVEYOR_TABLE.get(), "_side3"))
+                .put(TextureSlot.PARTICLE, TextureMapping.getBlockTexture(OzoneBlocks.SURVEYOR_TABLE.get(), "_side3"))
                 .put(TextureSlot.DOWN, TextureMapping.getBlockTexture(Blocks.PALE_OAK_PLANKS))
-                .put(TextureSlot.UP, TextureMapping.getBlockTexture(Ozone.SURVEYOR_TABLE.get(), "_top"))
-                .put(TextureSlot.NORTH, TextureMapping.getBlockTexture(Ozone.SURVEYOR_TABLE.get(), "_side3"))
-                .put(TextureSlot.EAST, TextureMapping.getBlockTexture(Ozone.SURVEYOR_TABLE.get(), "_side3"))
-                .put(TextureSlot.SOUTH, TextureMapping.getBlockTexture(Ozone.SURVEYOR_TABLE.get(), "_side1"))
-                .put(TextureSlot.WEST, TextureMapping.getBlockTexture(Ozone.SURVEYOR_TABLE.get(), "_side2"));
-        this.blockStateOutput.accept(createSimpleBlock(Ozone.SURVEYOR_TABLE.get(), ModelTemplates.CUBE.create(Ozone.SURVEYOR_TABLE.get(), textureMapping, this.modelOutput)));
+                .put(TextureSlot.UP, TextureMapping.getBlockTexture(OzoneBlocks.SURVEYOR_TABLE.get(), "_top"))
+                .put(TextureSlot.NORTH, TextureMapping.getBlockTexture(OzoneBlocks.SURVEYOR_TABLE.get(), "_side3"))
+                .put(TextureSlot.EAST, TextureMapping.getBlockTexture(OzoneBlocks.SURVEYOR_TABLE.get(), "_side3"))
+                .put(TextureSlot.SOUTH, TextureMapping.getBlockTexture(OzoneBlocks.SURVEYOR_TABLE.get(), "_side1"))
+                .put(TextureSlot.WEST, TextureMapping.getBlockTexture(OzoneBlocks.SURVEYOR_TABLE.get(), "_side2"));
+        this.blockStateOutput.accept(createSimpleBlock(OzoneBlocks.SURVEYOR_TABLE.get(), ModelTemplates.CUBE.create(OzoneBlocks.SURVEYOR_TABLE.get(), textureMapping, this.modelOutput)));
     }
 }

@@ -31,7 +31,7 @@ public class RtpCommand { //todo cooldown/cost
             } while (newPos.getY() <= source.getLevel().getSeaLevel());
 
             OzoneCommands.performTeleport(sender, source.getLevel(), newPos.getX(), newPos.getY(), newPos.getZ(), sender.getYRot(), sender.getXRot());
-            source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.rtp", sender.getDisplayName()), true);
+            source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.rtp", sender.getDisplayName()), false);
         }
         return 1;
     }

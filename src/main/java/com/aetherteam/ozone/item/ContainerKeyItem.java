@@ -30,7 +30,7 @@ public class ContainerKeyItem extends Item {
             if (level.getBlockEntity(pos) instanceof BaseContainerBlockEntity blockEntity) {
                 blockEntity.getData(OzoneDataAttachments.OWNER.get()).ifPresent(uuid -> {
                     if (player.getUUID().equals(uuid)) {
-                        if (stack.is(Ozone.CONTAINER_KEY)) {
+                        if (stack.is(OzoneItems.CONTAINER_KEY)) {
                             blockEntity.setData(OzoneDataAttachments.LOCKED.get(), !blockEntity.getData(OzoneDataAttachments.LOCKED.get())); //todo packet. gonna need to figure out how to sync on player login though
                             event.setCanceled(true);
                             event.setCancellationResult(InteractionResult.SUCCESS_SERVER);

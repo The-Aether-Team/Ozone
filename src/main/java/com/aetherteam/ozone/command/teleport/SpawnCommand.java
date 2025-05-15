@@ -26,7 +26,7 @@ public class SpawnCommand {
             Optional<BlockPos> pos = source.getLevel().getData(OzoneDataAttachments.LEVEL).getServerSpawn();
             if (pos.isPresent()) {
                 OzoneCommands.performTeleport(sender, (ServerLevel) sender.level(), pos.get().getX(), pos.get().getY(), pos.get().getZ(), sender.getYRot(), sender.getXRot());
-                source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.spawn", sender.getDisplayName()), true);
+                source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.spawn", sender.getDisplayName()), false);
             }
         }
         return 1;

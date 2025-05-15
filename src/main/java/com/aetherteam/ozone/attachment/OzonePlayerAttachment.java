@@ -1,20 +1,23 @@
 package com.aetherteam.ozone.attachment;
 
+import com.aetherteam.ozone.network.packet.clientbound.HomeSuggestionPacket;
+import com.aetherteam.ozone.network.packet.clientbound.WarpSuggestionPacket;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.UUIDUtil;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
+import net.neoforged.neoforge.network.PacketDistributor;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 public class OzonePlayerAttachment {
     private Optional<BlockPos> previousPosition;
     private Optional<UUID> otherPlayerRequestingTeleport;
     private Optional<UUID> requestingTeleportToOtherPlayer;
     private Map<String, BlockPos> homes;
+    private List<String> homeCommandSuggestions;
 
     public static final Codec<OzonePlayerAttachment> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             BlockPos.CODEC.optionalFieldOf("previous_position").forGetter(OzonePlayerAttachment::getPreviousPosition),
@@ -23,11 +26,14 @@ public class OzonePlayerAttachment {
             Codec.unboundedMap(Codec.STRING, BlockPos.CODEC).fieldOf("homes").forGetter(OzonePlayerAttachment::getHomes)
     ).apply(instance, OzonePlayerAttachment::new));
 
+    private boolean shouldSyncAfterJoin;
+
     public OzonePlayerAttachment() {
         this.previousPosition = Optional.empty();
         this.otherPlayerRequestingTeleport = Optional.empty();
         this.requestingTeleportToOtherPlayer = Optional.empty();
         this.homes = new HashMap<>();
+        this.homeCommandSuggestions = new ArrayList<>();
     }
 
     public OzonePlayerAttachment(Optional<BlockPos> previousPosition, Optional<UUID> otherPlayerRequestingTeleport, Optional<UUID> requestingTeleportToOtherPlayer, Map<String, BlockPos> homes) {
@@ -35,6 +41,29 @@ public class OzonePlayerAttachment {
         this.otherPlayerRequestingTeleport = otherPlayerRequestingTeleport;
         this.requestingTeleportToOtherPlayer = requestingTeleportToOtherPlayer;
         this.homes = new HashMap<>(homes);
+        this.homeCommandSuggestions = new ArrayList<>(this.homes.keySet().stream().toList());
+    }
+
+    public void login(Player player) {
+        this.shouldSyncAfterJoin = true;
+    }
+
+    public void changeDimension(Player player) {
+        this.shouldSyncAfterJoin = true;
+    }
+
+    public void postTickUpdate(Player player) {
+        this.syncAfterJoin(player);
+    }
+
+    private void syncAfterJoin(Player player) {
+        if (this.shouldSyncAfterJoin) {
+            if (player instanceof ServerPlayer serverPlayer) {
+                PacketDistributor.sendToPlayer(serverPlayer, new HomeSuggestionPacket(this.homeCommandSuggestions));
+                PacketDistributor.sendToPlayer(serverPlayer, new WarpSuggestionPacket(serverPlayer.level().getData(OzoneDataAttachments.LEVEL).getWarpCommandSuggestions()));
+            }
+            this.shouldSyncAfterJoin = false;
+        }
     }
 
     public Optional<BlockPos> getPreviousPosition() {
@@ -77,15 +106,29 @@ public class OzonePlayerAttachment {
         return this.homes;
     }
 
-    public void setHomes(Map<String, BlockPos> warps) {
+    public void setHomes(ServerPlayer serverPlayer, Map<String, BlockPos> warps) {
         this.homes = warps;
+        this.homeCommandSuggestions = warps.keySet().stream().toList();
+        PacketDistributor.sendToPlayer(serverPlayer, new HomeSuggestionPacket(this.homeCommandSuggestions));
     }
 
-    public void addHome(String title, BlockPos warp) {
+    public void addHome(ServerPlayer serverPlayer, String title, BlockPos warp) {
         this.homes.put(title, warp);
+        this.homeCommandSuggestions.add(title);
+        PacketDistributor.sendToPlayer(serverPlayer, new HomeSuggestionPacket(this.homeCommandSuggestions));
     }
 
-    public void removeHome(String title) {
+    public void removeHome(ServerPlayer serverPlayer, String title) {
         this.homes.remove(title);
+        this.homeCommandSuggestions.remove(title);
+        PacketDistributor.sendToPlayer(serverPlayer, new HomeSuggestionPacket(this.homeCommandSuggestions));
+    }
+
+    public List<String> getHomeCommandSuggestions() {
+        return this.homeCommandSuggestions;
+    }
+
+    public void setHomeCommandSuggestions(List<String> homeCommandSuggestions) {
+        this.homeCommandSuggestions = homeCommandSuggestions;
     }
 }

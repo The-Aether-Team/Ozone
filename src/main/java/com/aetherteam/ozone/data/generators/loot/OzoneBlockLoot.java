@@ -1,6 +1,6 @@
 package com.aetherteam.ozone.data.generators.loot;
 
-import com.aetherteam.ozone.Ozone;
+import com.aetherteam.ozone.block.OzoneBlocks;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
@@ -24,11 +24,11 @@ public class OzoneBlockLoot extends BlockLootSubProvider {
     public void generate() {
         HolderGetter<Item> getter = this.registries.lookupOrThrow(Registries.ITEM);
 
-        this.dropSelf(Ozone.SURVEYOR_TABLE.get());
+        this.dropSelf(OzoneBlocks.SURVEYOR_TABLE.get());
     }
 
     @Override
     public Iterable<Block> getKnownBlocks() {
-        return Ozone.BLOCKS.getEntries().stream().map(Supplier::get).collect(Collectors.toList());
+        return OzoneBlocks.BLOCKS.getEntries().stream().map(Supplier::get).collect(Collectors.toList());
     }
 }

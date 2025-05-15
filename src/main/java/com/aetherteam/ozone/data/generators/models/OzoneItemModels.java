@@ -1,6 +1,6 @@
 package com.aetherteam.ozone.data.generators.models;
 
-import com.aetherteam.ozone.Ozone;
+import com.aetherteam.ozone.item.OzoneItems;
 import net.minecraft.client.data.models.ItemModelGenerators;
 import net.minecraft.client.data.models.ItemModelOutput;
 import net.minecraft.client.data.models.model.ModelInstance;
@@ -16,6 +16,6 @@ public class OzoneItemModels extends ItemModelGenerators {
 
     @Override
     public void run() {
-        this.generateFlatItem(Ozone.CONTAINER_KEY.get(), ModelTemplates.FLAT_ITEM);
+        this.generateFlatItem(OzoneItems.CONTAINER_KEY.get(), ModelTemplates.FLAT_ITEM);
     }
 }

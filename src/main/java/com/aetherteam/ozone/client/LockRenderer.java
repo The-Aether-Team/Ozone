@@ -2,6 +2,7 @@ package com.aetherteam.ozone.client;
 
 import com.aetherteam.ozone.Ozone;
 import com.aetherteam.ozone.attachment.OzoneDataAttachments;
+import com.aetherteam.ozone.item.OzoneItems;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Camera;
@@ -50,7 +51,7 @@ public class LockRenderer {
                 BlockPos playerPos = player.blockPosition();
                 ItemStack stack = player.getMainHandItem();
                 // Check to remove overlays from the map.
-                updatePositions(player, playerPos, level, range, !stack.is(Ozone.CONTAINER_KEY)); // Check to add overlays to the map.
+                updatePositions(player, playerPos, level, range, !stack.is(OzoneItems.CONTAINER_KEY)); // Check to add overlays to the map.
                 for (int i = 0; i < positionsForTypes.size(); i++) {
                     renderOverlays(level, poseStack, renderBuffers, camera, frustum, i); // Render any overlays at positions in the map.
                 }

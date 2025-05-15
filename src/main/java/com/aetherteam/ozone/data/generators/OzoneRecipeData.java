@@ -1,6 +1,8 @@
 package com.aetherteam.ozone.data.generators;
 
 import com.aetherteam.ozone.Ozone;
+import com.aetherteam.ozone.block.OzoneBlocks;
+import com.aetherteam.ozone.item.OzoneItems;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
@@ -26,7 +28,7 @@ public class OzoneRecipeData  extends RecipeProvider {
 
     @Override
     protected void buildRecipes() {
-        this.shaped(RecipeCategory.DECORATIONS, Ozone.SURVEYOR_TABLE)
+        this.shaped(RecipeCategory.DECORATIONS, OzoneBlocks.SURVEYOR_TABLE)
                 .define('#', ItemTags.PLANKS)
                 .define('@', Tags.Items.INGOTS_COPPER)
                 .pattern("@@")
@@ -34,7 +36,7 @@ public class OzoneRecipeData  extends RecipeProvider {
                 .pattern("##")
                 .unlockedBy("has_copper_ingot", this.has(Tags.Items.INGOTS_COPPER))
                 .save(this.output);
-        this.shaped(RecipeCategory.DECORATIONS, Ozone.CONTAINER_KEY)
+        this.shaped(RecipeCategory.DECORATIONS, OzoneItems.CONTAINER_KEY)
                 .define('@', Tags.Items.INGOTS_COPPER)
                 .define('#', Tags.Items.NUGGETS_IRON)
                 .pattern("@")
