@@ -15,15 +15,15 @@ import java.util.*;
 
 public class OzonePlayerAttachment {
     private Optional<GlobalPos> previousPosition;
-    private Optional<UUID> otherPlayerRequestingTeleport;
-    private Optional<UUID> requestingTeleportToOtherPlayer;
+    private Optional<UUID> tpaTarget;
+    private Optional<UUID> tpaSource;
     private Map<String, GlobalPos> homes;
     private List<String> homeCommandSuggestions;
 
     public static final Codec<OzonePlayerAttachment> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             GlobalPos.CODEC.optionalFieldOf("previous_position").forGetter(OzonePlayerAttachment::getPreviousPosition),
-            UUIDUtil.CODEC.optionalFieldOf("other_player_requesting_teleport").forGetter(OzonePlayerAttachment::getOtherPlayerRequestingTeleport),
-            UUIDUtil.CODEC.optionalFieldOf("requesting_teleport_to_other_player").forGetter(OzonePlayerAttachment::getRequestingTeleportToOtherPlayer),
+            UUIDUtil.CODEC.optionalFieldOf("tpa_target").forGetter(OzonePlayerAttachment::getTpaTarget),
+            UUIDUtil.CODEC.optionalFieldOf("tpa_source").forGetter(OzonePlayerAttachment::getTpaSource),
             Codec.unboundedMap(Codec.STRING, GlobalPos.CODEC).fieldOf("homes").forGetter(OzonePlayerAttachment::getHomes)
     ).apply(instance, OzonePlayerAttachment::new));
 
@@ -31,16 +31,16 @@ public class OzonePlayerAttachment {
 
     public OzonePlayerAttachment() {
         this.previousPosition = Optional.empty();
-        this.otherPlayerRequestingTeleport = Optional.empty();
-        this.requestingTeleportToOtherPlayer = Optional.empty();
+        this.tpaTarget = Optional.empty();
+        this.tpaSource = Optional.empty();
         this.homes = new HashMap<>();
         this.homeCommandSuggestions = new ArrayList<>();
     }
 
-    public OzonePlayerAttachment(Optional<GlobalPos> previousPosition, Optional<UUID> otherPlayerRequestingTeleport, Optional<UUID> requestingTeleportToOtherPlayer, Map<String, GlobalPos> homes) {
+    public OzonePlayerAttachment(Optional<GlobalPos> previousPosition, Optional<UUID> tpaTarget, Optional<UUID> tpaSource, Map<String, GlobalPos> homes) {
         this.previousPosition = previousPosition;
-        this.otherPlayerRequestingTeleport = otherPlayerRequestingTeleport;
-        this.requestingTeleportToOtherPlayer = requestingTeleportToOtherPlayer;
+        this.tpaTarget = tpaTarget;
+        this.tpaSource = tpaSource;
         this.homes = new HashMap<>(homes);
         this.homeCommandSuggestions = new ArrayList<>(this.homes.keySet().stream().toList());
     }
@@ -80,32 +80,32 @@ public class OzonePlayerAttachment {
         this.previousPosition = Optional.of(previousPosition);
     }
 
-    public void clearPreviousPosition() { //todo
+    public void clearPreviousPosition() {
         this.previousPosition = Optional.empty();
     }
 
-    public Optional<UUID> getOtherPlayerRequestingTeleport() {
-        return this.otherPlayerRequestingTeleport;
+    public Optional<UUID> getTpaTarget() {
+        return this.tpaTarget;
     }
 
-    public void setOtherPlayerRequestingTeleport(UUID otherPlayerRequestingTeleport) {
-        this.otherPlayerRequestingTeleport = Optional.of(otherPlayerRequestingTeleport);
+    public void setTpaTarget(UUID tpaTarget) {
+        this.tpaTarget = Optional.of(tpaTarget);
     }
 
-    public void clearOtherPlayerRequestingTeleport() {
-        this.otherPlayerRequestingTeleport = Optional.empty();
+    public void clearTpaTarget() {
+        this.tpaTarget = Optional.empty();
     }
 
-    public Optional<UUID> getRequestingTeleportToOtherPlayer() {
-        return this.requestingTeleportToOtherPlayer;
+    public Optional<UUID> getTpaSource() {
+        return this.tpaSource;
     }
 
-    public void setRequestingTeleportToOtherPlayer(UUID requestingTeleportToOtherPlayer) {
-        this.requestingTeleportToOtherPlayer = Optional.of(requestingTeleportToOtherPlayer);
+    public void setTpaSource(UUID tpaSource) {
+        this.tpaSource = Optional.of(tpaSource);
     }
 
-    public void clearRequestingTeleportToOtherPlayer() {
-        this.requestingTeleportToOtherPlayer = Optional.empty();
+    public void clearTpaSource() {
+        this.tpaSource = Optional.empty();
     }
 
     public Map<String, GlobalPos> getHomes() {

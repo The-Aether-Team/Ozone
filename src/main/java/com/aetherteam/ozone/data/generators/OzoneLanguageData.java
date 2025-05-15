@@ -18,19 +18,32 @@ public class OzoneLanguageData extends NitrogenLanguageProvider {
         this.addCommand("back", "Returned to previous position");
         this.addCommand("back.error", "No valid previous position");
 
+
+        this.addCommand("tpa.error.self", "You cannot request to teleport to yourself");
+
         this.addCommand("tpa.request.source", "Requested teleportation to %s");
         this.addCommand("tpa.request.target", "%s requested to teleport to you");
+
         this.addCommand("tpa.here.source", "Requested %s teleport to you");
         this.addCommand("tpa.here.target", "%s requested you teleport to them");
+
         this.addCommand("tpa.accept.source", "Teleported to %s");
         this.addCommand("tpa.accept.target", "%s teleported to you");
-        this.addCommand("tpa.accept.error", "Failed to accept teleport request");
+        this.addCommand("tpa.accept.error", "No valid requests found");
+        this.addCommand("tpa.accept.error.target", "Target not found");
+        this.addCommand("tpa.accept.error.source", "Source not found");
+        this.addCommand("tpa.accept.error.mismatch", "Request target and source do not match");
+
         this.addCommand("tpa.deny.source", "Denied %s teleport to you");
         this.addCommand("tpa.deny.target", "%s denied you teleport to them");
-        this.addCommand("tpa.deny.error", "Failed to deny teleport request");
+        this.addCommand("tpa.deny.error", "No incoming teleport requests found");
+        this.addCommand("tpa.deny.error.cancelled", "The teleport request was already cancelled");
+
         this.addCommand("tpa.cancel.source", "Cancelled teleportation to %s");
         this.addCommand("tpa.cancel.target", "%s cancelled teleportation to you");
-        this.addCommand("tpa.cancel.error", "Failed to cancel teleport request");
+        this.addCommand("tpa.cancel.error", "No outgoing teleport requests found");
+        this.addCommand("tpa.cancel.error.denied", "The teleport request was already denied");
+
 
         this.addCommand("rtp", "Teleported to random location");
         this.addCommand("rtp.search", "Searching for random location");
