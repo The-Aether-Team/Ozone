@@ -19,6 +19,10 @@ public class OzoneLanguageData extends NitrogenLanguageProvider {
         this.addCommand("back.error", "No valid previous position");
 
 
+        this.addCommand("tpa.prompt", ". %s / %s");
+        this.addCommand("tpa.prompt.accept", "[Accept]");
+        this.addCommand("tpa.prompt.deny", "[Deny]");
+
         this.addCommand("tpa.error.self", "You cannot request to teleport to yourself");
         this.addCommand("tpa.error.exists", "Request already exists");
 
@@ -34,8 +38,8 @@ public class OzoneLanguageData extends NitrogenLanguageProvider {
         this.addCommand("tpa.accept.error.not_found", "Could not find target or source");
 
         this.addCommand("tpa.deny", "Denied teleportation request");
-        this.addCommand("tpa.deny.source", "Denied %s teleport to you");
-        this.addCommand("tpa.deny.target", "%s denied you teleport to them");
+        this.addCommand("tpa.deny.source", "Denied teleport request from %s");
+        this.addCommand("tpa.deny.target", "%s denied your teleport request");
         this.addCommand("tpa.deny.error", "No incoming teleport requests found");
 
         this.addCommand("tpa.cancel", "Cancelled teleportation request");

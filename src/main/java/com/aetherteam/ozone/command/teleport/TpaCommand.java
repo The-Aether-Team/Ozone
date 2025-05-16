@@ -6,9 +6,11 @@ import com.aetherteam.ozone.command.OzoneCommands;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
+import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -17,7 +19,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.UUID;
 
-public class TpaCommand { //todo change messages and allow clicking them to confirm or deny.
+public class TpaCommand {
     private static final SimpleCommandExceptionType ERROR_TELEPORT_SELF = new SimpleCommandExceptionType(Component.translatable("commands.ozone_utilities.tpa.error.self"));
     private static final SimpleCommandExceptionType ERROR_TELEPORT_EXISTS = new SimpleCommandExceptionType(Component.translatable("commands.ozone_utilities.tpa.error.exists"));
     private static final SimpleCommandExceptionType ERROR_TELEPORT_ACCEPT = new SimpleCommandExceptionType(Component.translatable("commands.ozone_utilities.tpa.accept.error"));
@@ -47,7 +49,7 @@ public class TpaCommand { //todo change messages and allow clicking them to conf
                         overworld.getData(OzoneDataAttachments.LEVEL).addTpaRequest(request);
 
                         source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.tpa.request.source", other.getDisplayName()), false);
-                        other.sendSystemMessage(Component.translatable("commands.ozone_utilities.tpa.request.target", you.getDisplayName()));
+                        other.sendSystemMessage(Component.translatable("commands.ozone_utilities.tpa.request.target", you.getDisplayName()).append(getPrompt()));
                     } else {
                         throw ERROR_TELEPORT_EXISTS.create();
                     }
@@ -71,7 +73,7 @@ public class TpaCommand { //todo change messages and allow clicking them to conf
                         overworld.getData(OzoneDataAttachments.LEVEL).addTpaRequest(request);
 
                         source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.tpa.here.source", other.getDisplayName()), false);
-                        other.sendSystemMessage(Component.translatable("commands.ozone_utilities.tpa.here.target", you.getDisplayName()));
+                        other.sendSystemMessage(Component.translatable("commands.ozone_utilities.tpa.here.target", you.getDisplayName()).append(getPrompt()));
                     } else {
                         throw ERROR_TELEPORT_EXISTS.create();
                     }
@@ -81,6 +83,15 @@ public class TpaCommand { //todo change messages and allow clicking them to conf
             }
         }
         return 1;
+    }
+
+    public static Component getPrompt() {
+        return Component.translatable("commands.ozone_utilities.tpa.prompt",
+                Component.translatable("commands.ozone_utilities.tpa.prompt.accept")
+                        .withStyle(style -> style.withColor(ChatFormatting.GREEN).withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/tpaaccept"))),
+                Component.translatable("commands.ozone_utilities.tpa.prompt.deny")
+                        .withStyle(style -> style.withColor(ChatFormatting.RED).withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/tpadeny")))
+        );
     }
 
     public static int accept(CommandSourceStack source) throws CommandSyntaxException {
@@ -111,7 +122,7 @@ public class TpaCommand { //todo change messages and allow clicking them to conf
         throw ERROR_TELEPORT_ACCEPT.create();
     }
 
-    // When someone is trying to teleport to you
+    // When someone is trying to send you a teleport request
     public static int deny(CommandSourceStack source) throws CommandSyntaxException {
         if (source.getEntityOrException() instanceof ServerPlayer you) {
             UUID yourUUID = you.getUUID();
@@ -121,19 +132,27 @@ public class TpaCommand { //todo change messages and allow clicking them to conf
 
                 for (Iterator<OzoneLevelAttachment.TeleportRequest> iterator = queue.iterator(); iterator.hasNext(); ) {
                     OzoneLevelAttachment.TeleportRequest request = iterator.next();
+                    UUID teleportSubject = request.teleportSubject();
                     UUID teleportTarget = request.teleportTarget();
 
-                    if (teleportTarget.equals(yourUUID)) {
+                    if (teleportSubject.equals(yourUUID) || teleportTarget.equals(yourUUID)) {
                         iterator.remove();
 
-                        ServerPlayer other = source.getServer().getPlayerList().getPlayer(request.teleportSubject());
+                        ServerPlayer other;
+                        if (teleportSubject.equals(yourUUID)) {
+                            other = source.getServer().getPlayerList().getPlayer(teleportTarget);
+                        } else if (teleportTarget.equals(yourUUID)) {
+                            other = source.getServer().getPlayerList().getPlayer(teleportSubject);
+                        } else {
+                            other = null;
+                        }
+
                         if (other != null) {
                             source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.tpa.deny.source", other.getDisplayName()), false);
                             other.sendSystemMessage(Component.translatable("commands.ozone_utilities.tpa.deny.target", you.getDisplayName()));
                         } else {
                             source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.tpa.deny"), false);
                         }
-                        return 1;
                     }
                 }
             }
@@ -141,7 +160,7 @@ public class TpaCommand { //todo change messages and allow clicking them to conf
         throw ERROR_TELEPORT_DENY.create();
     }
 
-    // When you are trying to teleport to someone
+    // When you are trying to send a teleport request
     public static int cancel(CommandSourceStack source) throws CommandSyntaxException {
         if (source.getEntityOrException() instanceof ServerPlayer you) {
             UUID yourUUID = you.getUUID();
@@ -172,7 +191,7 @@ public class TpaCommand { //todo change messages and allow clicking them to conf
     }
 
     private static int teleportToEntity(CommandSourceStack stack, ServerPlayer target, ServerPlayer subject) {
-        OzoneCommands.performTeleport(subject, (ServerLevel) target.level(), target.getX(), target.getY(), target.getZ(), target.getYRot(), target.getXRot());
+        OzoneCommands.performTeleport(subject, (ServerLevel) target.level(), target.getX(), target.getY(), target.getZ(), subject.getYRot(), subject.getXRot());
 
         stack.sendSuccess(() -> Component.translatable("commands.ozone_utilities.tpa.accept.source", target.getDisplayName()), false);
         target.sendSystemMessage(Component.translatable("commands.ozone_utilities.tpa.accept.target", subject.getDisplayName()));
