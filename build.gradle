@@ -31,9 +31,18 @@ neoForge {
             logLevel = org.slf4j.event.Level.INFO
         }
 
-        client {
+        client1 {
             client()
             systemProperty 'forge.enabledGameTestNamespaces', mod_id
+
+            programArguments.addAll("--username", "Player_1")
+        }
+
+        client2 {
+            client()
+            systemProperty 'forge.enabledGameTestNamespaces', mod_id
+
+            programArguments.addAll("--username", "Player_2")
         }
 
         server {

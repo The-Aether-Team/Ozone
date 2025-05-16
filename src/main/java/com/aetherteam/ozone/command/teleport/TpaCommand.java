@@ -40,6 +40,14 @@ public class TpaCommand {
     public static int request(CommandSourceStack source, ServerPlayer other) throws CommandSyntaxException { // correct i think
         if (source.getEntityOrException() instanceof ServerPlayer you) {
             if (!you.getUUID().equals(other.getUUID())) {
+                you.getData(OzoneDataAttachments.PLAYER).getTpaTarget().ifPresent((otherUUID) -> {
+                    ServerPlayer oldOther = source.getServer().getPlayerList().getPlayer(otherUUID);
+                    if (oldOther != null) {
+                        oldOther.getData(OzoneDataAttachments.PLAYER).clearTpaSource();
+                        oldOther.sendSystemMessage(Component.translatable("commands.ozone_utilities.tpa.cancel.target", you.getDisplayName()));
+                    }
+                });
+
                 you.getData(OzoneDataAttachments.PLAYER).setTpaTarget(other.getUUID());
                 other.getData(OzoneDataAttachments.PLAYER).setTpaSource(you.getUUID());
 
@@ -56,6 +64,14 @@ public class TpaCommand {
     public static int here(CommandSourceStack source, ServerPlayer other) throws CommandSyntaxException {
         if (source.getEntityOrException() instanceof ServerPlayer you) {
             if (!you.getUUID().equals(other.getUUID())) {
+                you.getData(OzoneDataAttachments.PLAYER).getTpaSource().ifPresent((otherUUID) -> {
+                    ServerPlayer oldOther = source.getServer().getPlayerList().getPlayer(otherUUID);
+                    if (oldOther != null) {
+                        oldOther.getData(OzoneDataAttachments.PLAYER).clearTpaTarget();
+                        oldOther.sendSystemMessage(Component.translatable("commands.ozone_utilities.tpa.cancel.source", you.getDisplayName()));
+                    }
+                });
+
                 other.getData(OzoneDataAttachments.PLAYER).setTpaTarget(you.getUUID());
                 you.getData(OzoneDataAttachments.PLAYER).setTpaSource(other.getUUID());
 
@@ -142,6 +158,7 @@ public class TpaCommand {
 
                         source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.tpa.cancel.source", other.getDisplayName()), false);
                         other.sendSystemMessage(Component.translatable("commands.ozone_utilities.tpa.cancel.target", you.getDisplayName()));
+                        return 1;
                     } else {
                         throw ERROR_TELEPORT_CANCEL_DENIED.create();
                     }
@@ -155,8 +172,15 @@ public class TpaCommand {
 
     private static int teleportToEntity(CommandSourceStack stack, ServerPlayer teleportTo, ServerPlayer entity) {
         OzoneCommands.performTeleport(entity, (ServerLevel) teleportTo.level(), teleportTo.getX(), teleportTo.getY(), teleportTo.getZ(), teleportTo.getYRot(), teleportTo.getXRot());
+
+        teleportTo.getData(OzoneDataAttachments.PLAYER).clearTpaTarget();
+        teleportTo.getData(OzoneDataAttachments.PLAYER).clearTpaSource();
+        entity.getData(OzoneDataAttachments.PLAYER).clearTpaTarget();
+        entity.getData(OzoneDataAttachments.PLAYER).clearTpaSource();
+
         stack.sendSuccess(() -> Component.translatable("commands.ozone_utilities.tpa.accept.source", teleportTo.getDisplayName()), false);
         teleportTo.sendSystemMessage(Component.translatable("commands.ozone_utilities.tpa.accept.target", entity.getDisplayName()));
+
         return 1;
     }
 }

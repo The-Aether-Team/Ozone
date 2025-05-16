@@ -27,7 +27,7 @@
   "commands.ozone_utilities.tpa.accept.target": "%s teleported to you",
   "commands.ozone_utilities.tpa.cancel.error": "No outgoing teleport requests found",
   "commands.ozone_utilities.tpa.cancel.error.denied": "The teleport request was already denied",
-  "commands.ozone_utilities.tpa.cancel.source": "Cancelled teleportation to %s",
+  "commands.ozone_utilities.tpa.cancel.source": "Teleportation to %s cancelled",
   "commands.ozone_utilities.tpa.cancel.target": "%s cancelled teleportation to you",
   "commands.ozone_utilities.tpa.deny.error": "No incoming teleport requests found",
   "commands.ozone_utilities.tpa.deny.error.cancelled": "The teleport request was already cancelled",

@@ -39,7 +39,7 @@ public class OzoneLanguageData extends NitrogenLanguageProvider {
         this.addCommand("tpa.deny.error", "No incoming teleport requests found");
         this.addCommand("tpa.deny.error.cancelled", "The teleport request was already cancelled");
 
-        this.addCommand("tpa.cancel.source", "Cancelled teleportation to %s");
+        this.addCommand("tpa.cancel.source", "Teleportation to %s cancelled");
         this.addCommand("tpa.cancel.target", "%s cancelled teleportation to you");
         this.addCommand("tpa.cancel.error", "No outgoing teleport requests found");
         this.addCommand("tpa.cancel.error.denied", "The teleport request was already denied");
