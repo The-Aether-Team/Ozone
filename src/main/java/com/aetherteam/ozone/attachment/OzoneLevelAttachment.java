@@ -16,6 +16,7 @@ public class OzoneLevelAttachment {
     private Optional<GlobalPos> serverSpawn;
     private Map<String, GlobalPos> warps;
     private List<String> warpCommandSuggestions;
+    private final Set<TeleportRequest> tpaQueue = new HashSet<>();
 
     public static final Codec<OzoneLevelAttachment> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             GlobalPos.CODEC.optionalFieldOf("server_spawn").forGetter(OzoneLevelAttachment::getServerSpawn),
@@ -76,8 +77,18 @@ public class OzoneLevelAttachment {
         this.warpCommandSuggestions = warpCommandSuggestions;
     }
 
+    public Set<TeleportRequest> getTpaQueue() {
+        return this.tpaQueue;
+    }
+
+    public void addTpaRequest(TeleportRequest request) {
+        this.tpaQueue.add(request);
+    }
+
     @Nullable
     public static ServerLevel getOverworld(MinecraftServer server) {
         return server.getLevel(Level.OVERWORLD);
     }
+
+    public record TeleportRequest(UUID teleportSubject, UUID teleportTarget) { }
 }

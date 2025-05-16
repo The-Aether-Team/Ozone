@@ -5,7 +5,6 @@ import com.aetherteam.ozone.network.packet.clientbound.WarpSuggestionPacket;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.GlobalPos;
-import net.minecraft.core.UUIDUtil;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -15,15 +14,11 @@ import java.util.*;
 
 public class OzonePlayerAttachment {
     private Optional<GlobalPos> previousPosition;
-    private Optional<UUID> tpaTarget;
-    private Optional<UUID> tpaSource;
     private Map<String, GlobalPos> homes;
     private List<String> homeCommandSuggestions;
 
     public static final Codec<OzonePlayerAttachment> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             GlobalPos.CODEC.optionalFieldOf("previous_position").forGetter(OzonePlayerAttachment::getPreviousPosition),
-            UUIDUtil.CODEC.optionalFieldOf("tpa_target").forGetter(OzonePlayerAttachment::getTpaTarget),
-            UUIDUtil.CODEC.optionalFieldOf("tpa_source").forGetter(OzonePlayerAttachment::getTpaSource),
             Codec.unboundedMap(Codec.STRING, GlobalPos.CODEC).fieldOf("homes").forGetter(OzonePlayerAttachment::getHomes)
     ).apply(instance, OzonePlayerAttachment::new));
 
@@ -31,16 +26,12 @@ public class OzonePlayerAttachment {
 
     public OzonePlayerAttachment() {
         this.previousPosition = Optional.empty();
-        this.tpaTarget = Optional.empty();
-        this.tpaSource = Optional.empty();
         this.homes = new HashMap<>();
         this.homeCommandSuggestions = new ArrayList<>();
     }
 
-    public OzonePlayerAttachment(Optional<GlobalPos> previousPosition, Optional<UUID> tpaTarget, Optional<UUID> tpaSource, Map<String, GlobalPos> homes) {
+    public OzonePlayerAttachment(Optional<GlobalPos> previousPosition, Map<String, GlobalPos> homes) {
         this.previousPosition = previousPosition;
-        this.tpaTarget = tpaTarget;
-        this.tpaSource = tpaSource;
         this.homes = new HashMap<>(homes);
         this.homeCommandSuggestions = new ArrayList<>(this.homes.keySet().stream().toList());
     }
@@ -82,30 +73,6 @@ public class OzonePlayerAttachment {
 
     public void clearPreviousPosition() {
         this.previousPosition = Optional.empty();
-    }
-
-    public Optional<UUID> getTpaTarget() {
-        return this.tpaTarget;
-    }
-
-    public void setTpaTarget(UUID tpaTarget) {
-        this.tpaTarget = Optional.of(tpaTarget);
-    }
-
-    public void clearTpaTarget() {
-        this.tpaTarget = Optional.empty();
-    }
-
-    public Optional<UUID> getTpaSource() {
-        return this.tpaSource;
-    }
-
-    public void setTpaSource(UUID tpaSource) {
-        this.tpaSource = Optional.of(tpaSource);
-    }
-
-    public void clearTpaSource() {
-        this.tpaSource = Optional.empty();
     }
 
     public Map<String, GlobalPos> getHomes() {
