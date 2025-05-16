@@ -1,6 +1,7 @@
 package com.aetherteam.ozone.command;
 
 import com.aetherteam.ozone.Ozone;
+import com.aetherteam.ozone.command.fun.HatCommand;
 import com.aetherteam.ozone.command.teleport.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -29,6 +30,8 @@ public class OzoneCommands {
         SpawnCommand.register(event.getDispatcher());
         HomeCommand.register(event.getDispatcher());
         WarpCommand.register(event.getDispatcher());
+
+        HatCommand.register(event.getDispatcher());
     }
 
     public static BlockPos getCorrectPosition(ServerPlayer entity) {

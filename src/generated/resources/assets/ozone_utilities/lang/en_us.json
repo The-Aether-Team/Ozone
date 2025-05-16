@@ -2,6 +2,8 @@
   "block.ozone_utilities.surveyor_table": "Surveyor Table",
   "commands.ozone_utilities.back": "Returned to previous position",
   "commands.ozone_utilities.back.error": "No valid previous position",
+  "commands.ozone_utilities.hat": "Equipped %s %s as a hat",
+  "commands.ozone_utilities.hat.error": "Hand is empty",
   "commands.ozone_utilities.home": "Teleported %s to home \"%s\"",
   "commands.ozone_utilities.home.delete": "Deleted home \"%s\"",
   "commands.ozone_utilities.home.delete.error": "Failed to delete home",

@@ -77,6 +77,9 @@ public class OzoneLanguageData extends NitrogenLanguageProvider {
         this.addCommand("warp.set.error", "Failed to set warp");
         this.addCommand("warp.delete.error", "Failed to delete warp");
 
+        this.addCommand("hat", "Equipped %s %s as a hat");
+        this.addCommand("hat.error", "Hand is empty");
+
         this.addPackDescription("mod", "Ozone Resources");
     }
 }
