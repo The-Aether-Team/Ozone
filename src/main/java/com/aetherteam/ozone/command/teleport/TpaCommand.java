@@ -153,6 +153,7 @@ public class TpaCommand {
                         } else {
                             source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.tpa.deny"), false);
                         }
+                        return 1;
                     }
                 }
             }
