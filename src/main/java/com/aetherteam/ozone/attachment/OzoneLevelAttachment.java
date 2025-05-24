@@ -8,14 +8,16 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.network.PacketDistributor;
+
+import org.apache.commons.lang3.Validate;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
 public class OzoneLevelAttachment {
-    private Optional<GlobalPos> serverSpawn;
+    private GlobalPos serverSpawn;
     private Map<String, GlobalPos> warps;
-    private List<String> warpCommandSuggestions;
+    private final HashSet<String> warpCommandSuggestions;
     private final Set<TeleportRequest> tpaQueue = new HashSet<>();
 
     public static final Codec<OzoneLevelAttachment> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -24,27 +26,27 @@ public class OzoneLevelAttachment {
     ).apply(instance, OzoneLevelAttachment::new));
 
     public OzoneLevelAttachment() {
-        this.serverSpawn = Optional.empty();
+        this.serverSpawn = null;
         this.warps = new HashMap<>();
-        this.warpCommandSuggestions = new ArrayList<>();
+        this.warpCommandSuggestions = new HashSet<>();
     }
 
     public OzoneLevelAttachment(Optional<GlobalPos> serverSpawn, Map<String, GlobalPos> warps) {
-        this.serverSpawn = serverSpawn;
+        this.serverSpawn = serverSpawn.orElse(null);
         this.warps = new HashMap<>(warps);
-        this.warpCommandSuggestions = new ArrayList<>(this.warps.keySet().stream().toList());
+        this.warpCommandSuggestions = new HashSet<>(this.warps.keySet());
     }
 
     public Optional<GlobalPos> getServerSpawn() {
-        return this.serverSpawn;
+        return Optional.ofNullable(this.serverSpawn);
     }
 
     public void setServerSpawn(GlobalPos serverSpawn) {
-        this.serverSpawn = Optional.of(serverSpawn);
+        this.serverSpawn = serverSpawn;
     }
 
     public void clearServerSpawn() {
-        this.serverSpawn = Optional.empty();
+        this.serverSpawn = null;
     }
 
     public Map<String, GlobalPos> getWarps() {
@@ -52,29 +54,37 @@ public class OzoneLevelAttachment {
     }
 
     public void setWarps(Map<String, GlobalPos> warps) {
-        this.warps = warps;
-        this.warpCommandSuggestions = warps.keySet().stream().toList();
-        PacketDistributor.sendToAllPlayers(new WarpSuggestionPacket(this.warpCommandSuggestions));
+        this.warps = Validate.notNull(warps, "warps was null");
+        this.warpCommandSuggestions.clear();
+        if (this.warpCommandSuggestions.addAll(warps.keySet())) {
+            PacketDistributor.sendToAllPlayers(new WarpSuggestionPacket(this.warpCommandSuggestions));
+        }
     }
 
     public void addWarp(String title, GlobalPos warp) {
         this.warps.put(title, warp);
-        this.warpCommandSuggestions.add(title);
-        PacketDistributor.sendToAllPlayers(new WarpSuggestionPacket(this.warpCommandSuggestions));
+        if (this.warpCommandSuggestions.add(title)) {
+            PacketDistributor.sendToAllPlayers(new WarpSuggestionPacket(this.warpCommandSuggestions));
+        }
     }
 
     public void removeWarp(String title) {
         this.warps.remove(title);
-        this.warpCommandSuggestions.remove(title);
-        PacketDistributor.sendToAllPlayers(new WarpSuggestionPacket(this.warpCommandSuggestions));
+        if (this.warpCommandSuggestions.remove(title)) {
+            PacketDistributor.sendToAllPlayers(new WarpSuggestionPacket(this.warpCommandSuggestions));
+        }
     }
 
-    public List<String> getWarpCommandSuggestions() {
+    public Set<String> getWarpCommandSuggestions() {
         return this.warpCommandSuggestions;
     }
 
-    public void setWarpCommandSuggestions(List<String> warpCommandSuggestions) {
-        this.warpCommandSuggestions = warpCommandSuggestions;
+    public void setWarpCommandSuggestions(Collection<String> warpCommandSuggestions) {
+        Validate.notNull(warpCommandSuggestions, "warpCommandSuggestions was null");
+        if (warpCommandSuggestions != this.warpCommandSuggestions) {
+            this.warpCommandSuggestions.clear();
+            this.warpCommandSuggestions.addAll(warpCommandSuggestions);
+        }
     }
 
     public Set<TeleportRequest> getTpaQueue() {

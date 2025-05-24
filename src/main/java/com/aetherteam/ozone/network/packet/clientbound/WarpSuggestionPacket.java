@@ -10,6 +10,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
+import java.util.Collection;
 import java.util.List;
 
 public record WarpSuggestionPacket(List<String> warps) implements CustomPacketPayload {
@@ -19,6 +20,10 @@ public record WarpSuggestionPacket(List<String> warps) implements CustomPacketPa
             ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()),
             WarpSuggestionPacket::warps,
             WarpSuggestionPacket::new);
+
+    public WarpSuggestionPacket(Collection<String> warps) {
+        this(warps.stream().toList());
+    }
 
     @Override
     public Type<WarpSuggestionPacket> type() {

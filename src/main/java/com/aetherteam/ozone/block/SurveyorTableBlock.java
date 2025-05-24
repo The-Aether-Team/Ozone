@@ -23,11 +23,7 @@ public class SurveyorTableBlock extends Block {
         super(properties);
     }
 
-    protected InteractionResult useWithoutItem(BlockState p_51357_, Level p_51358_, BlockPos p_51359_, Player p_51360_, BlockHitResult p_51362_) {
-//        if (!p_51358_.isClientSide) {
-//            p_51360_.openMenu(p_51357_.getMenuProvider(p_51358_, p_51359_));
-//            p_51360_.awardStat(Stats.INTERACT_WITH_CARTOGRAPHY_TABLE);
-//        }
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
 
         return InteractionResult.SUCCESS;
     }
