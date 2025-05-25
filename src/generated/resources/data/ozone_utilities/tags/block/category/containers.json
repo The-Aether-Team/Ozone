@@ -1,0 +1,32 @@
+{
+  "values": [
+    "#c:chests",
+    "#c:barrels",
+    "#c:player_workstations/furnaces",
+    "#c:bookshelves",
+    "minecraft:dispenser",
+    "minecraft:dropper",
+    "minecraft:decorated_pot",
+    "minecraft:hopper",
+    {
+      "id": "aether:skyroot_chest",
+      "required": false
+    },
+    {
+      "id": "aether:altar",
+      "required": false
+    },
+    {
+      "id": "aether:freezer",
+      "required": false
+    },
+    {
+      "id": "aether:incubator",
+      "required": false
+    },
+    {
+      "id": "aetherii:skyroot_chest",
+      "required": false
+    }
+  ]
+}

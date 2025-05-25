@@ -1,0 +1,5 @@
+// 1.21.4	2025-05-25T17:56:59.5475352	Tags for minecraft:block mod id ozone_utilities
+3fb4af18bba6a662105abbc2be5237d719bfdecf data/ozone_utilities/tags/block/category/containers.json
+c917c1a6b456701556b05e22c2316acc2581f6f8 data/ozone_utilities/tags/block/category/doors.json
+8c971fa161feb22ca2bc1f64c428fce4cf7bed38 data/ozone_utilities/tags/block/category/other.json
+4ec850b7ada7e97f4608c13a9e34caa2c0cf1ede data/ozone_utilities/tags/block/category/redstone_activators.json

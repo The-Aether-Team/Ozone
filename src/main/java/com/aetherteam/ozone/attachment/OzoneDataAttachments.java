@@ -1,20 +1,22 @@
 package com.aetherteam.ozone.attachment;
 
+import java.util.Optional;
+import java.util.UUID;
+
 import com.aetherteam.ozone.Ozone;
 import com.mojang.serialization.Codec;
+
 import net.minecraft.core.UUIDUtil;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
-import java.util.Optional;
-import java.util.UUID;
-
 public class OzoneDataAttachments {
     public static final DeferredRegister<AttachmentType<?>> ATTACHMENTS = DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, Ozone.MODID);
 
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<OzoneLevelAttachment>> LEVEL = ATTACHMENTS.register("level", () -> AttachmentType.builder((holder) -> new OzoneLevelAttachment()).serialize(OzoneLevelAttachment.CODEC).build());
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<OzoneChunkAttachment>> CHUNK = ATTACHMENTS.register("chunk", () -> AttachmentType.builder((holder) -> new OzoneChunkAttachment()).serialize(OzoneChunkAttachment.CODEC).build());
 
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<OzonePlayerAttachment>> PLAYER = ATTACHMENTS.register("player", () -> AttachmentType.builder((holder) -> new OzonePlayerAttachment()).serialize(OzonePlayerAttachment.CODEC).build());
 

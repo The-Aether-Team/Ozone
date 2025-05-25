@@ -1,0 +1,8 @@
+{
+  "values": [
+    "#minecraft:doors",
+    "#minecraft:trapdoors",
+    "#minecraft:fence_gates",
+    "#c:fence_gates"
+  ]
+}

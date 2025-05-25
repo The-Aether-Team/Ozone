@@ -1,5 +1,6 @@
 package com.aetherteam.ozone.data;
 
+import com.aetherteam.ozone.data.generators.OzoneBlockTagData;
 import com.aetherteam.ozone.data.generators.OzoneLanguageData;
 import com.aetherteam.ozone.data.generators.OzoneLootTableData;
 import com.aetherteam.ozone.data.generators.OzoneModelData;
@@ -31,6 +32,7 @@ public class OzoneData {
         // Server Data
         generator.addProvider(true, new OzoneRecipeData.Runner(packOutput, lookupProvider));
         generator.addProvider(true, OzoneLootTableData.create(packOutput, lookupProvider));
+        generator.addProvider(true, new OzoneBlockTagData(packOutput, lookupProvider));
 
         // Tags
 //        AetherIIBlockTagData blockTags = new AetherIIBlockTagData(packOutput, registryProvider);
