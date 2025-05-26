@@ -12,74 +12,118 @@ public class OzoneLanguageData extends NitrogenLanguageProvider {
 
     @Override
     protected void addTranslations() {
-        this.addBlock(OzoneBlocks.SURVEYOR_TABLE, "Surveyor Table");
-        this.addItem(OzoneItems.CONTAINER_KEY, "Container Key");
+        addBlock(OzoneBlocks.SURVEYOR_TABLE, "Surveyor Table");
+        addItem(OzoneItems.CONTAINER_KEY, "Container Key");
 
-        this.addCommand("back", "Returned to previous position");
-        this.addCommand("back.error", "No valid previous position");
-
-
-        this.addCommand("tpa.prompt", ". %s / %s");
-        this.addCommand("tpa.prompt.accept", "[Accept]");
-        this.addCommand("tpa.prompt.deny", "[Deny]");
-
-        this.addCommand("tpa.error.self", "You cannot request to teleport to yourself");
-        this.addCommand("tpa.error.exists", "Request already exists");
-
-        this.addCommand("tpa.request.source", "Requested teleportation to %s");
-        this.addCommand("tpa.request.target", "%s requested to teleport to you");
-
-        this.addCommand("tpa.here.source", "Requested %s teleport to you");
-        this.addCommand("tpa.here.target", "%s requested you teleport to them");
-
-        this.addCommand("tpa.accept.source", "Teleported to %s");
-        this.addCommand("tpa.accept.target", "%s teleported to you");
-        this.addCommand("tpa.accept.error", "No requests found");
-        this.addCommand("tpa.accept.error.not_found", "Could not find target or source");
-
-        this.addCommand("tpa.deny", "Denied teleportation request");
-        this.addCommand("tpa.deny.source", "Denied teleport request from %s");
-        this.addCommand("tpa.deny.target", "%s denied your teleport request");
-        this.addCommand("tpa.deny.error", "No incoming teleport requests found");
-
-        this.addCommand("tpa.cancel", "Cancelled teleportation request");
-        this.addCommand("tpa.cancel.source", "Teleportation to %s cancelled");
-        this.addCommand("tpa.cancel.target", "%s cancelled teleportation to you");
-        this.addCommand("tpa.cancel.error", "No outgoing teleport requests found");
+        addCommand("back", "Returned to previous position");
+        addCommand("back.error", "No valid previous position");
 
 
-        this.addCommand("rtp", "Teleported to random location");
-        this.addCommand("rtp.search", "Searching for random location");
+        addCommand("tpa.prompt", ". %s / %s");
+        addCommand("tpa.prompt.accept", "[Accept]");
+        addCommand("tpa.prompt.deny", "[Deny]");
 
-        this.addCommand("spawn", "Teleported %s to the server spawn");
-        this.addCommand("spawn.set", "Set the server spawn to %s, %s, %s in %s");
-        this.addCommand("spawn.delete", "Deleted the server spawn");
-        this.addCommand("spawn.error", "Failed to teleport to server spawn");
-        this.addCommand("spawn.error.doesnt_exist", "No server spawn exists");
-        this.addCommand("spawn.set.error", "Failed to set server spawn");
-        this.addCommand("spawn.delete.error", "Failed to delete server spawn");
+        addCommand("tpa.error.self", "You cannot request to teleport to yourself");
+        addCommand("tpa.error.exists", "Request already exists");
 
-        this.addCommand("home", "Teleported %s to home \"%s\"");
-        this.addCommand("home.set", "Created home \"%s\" at %s, %s, %s in %s");
-        this.addCommand("home.delete", "Deleted home \"%s\"");
-        this.addCommand("home.error", "Failed to teleport to home");
-        this.addCommand("home.error.doesnt_exist", "Home doesn't exist");
-        this.addCommand("home.error.already_exists", "Home already exists");
-        this.addCommand("home.set.error", "Failed to set home");
-        this.addCommand("home.delete.error", "Failed to delete home");
+        addCommand("tpa.request.source", "Requested teleportation to %s");
+        addCommand("tpa.request.target", "%s requested to teleport to you");
 
-        this.addCommand("warp", "Teleported %s to warp \"%s\"");
-        this.addCommand("warp.set", "Created warp \"%s\" at %s, %s, %s in %s");
-        this.addCommand("warp.delete", "Deleted warp \"%s\"");
-        this.addCommand("warp.error", "Failed to teleport to warp");
-        this.addCommand("warp.error.doesnt_exist", "Warp doesn't exist");
-        this.addCommand("warp.error.already_exists", "Warp already exists");
-        this.addCommand("warp.set.error", "Failed to set warp");
-        this.addCommand("warp.delete.error", "Failed to delete warp");
+        addCommand("tpa.here.source", "Requested %s teleport to you");
+        addCommand("tpa.here.target", "%s requested you teleport to them");
 
-        this.addCommand("hat", "Equipped %s %s as a hat");
-        this.addCommand("hat.error", "Hand is empty");
+        addCommand("tpa.accept.source", "Teleported to %s");
+        addCommand("tpa.accept.target", "%s teleported to you");
+        addCommand("tpa.accept.error", "No requests found");
+        addCommand("tpa.accept.error.not_found", "Could not find target or source");
 
-        this.addPackDescription("mod", "Ozone Resources");
+        addCommand("tpa.deny", "Denied teleportation request");
+        addCommand("tpa.deny.source", "Denied teleport request from %s");
+        addCommand("tpa.deny.target", "%s denied your teleport request");
+        addCommand("tpa.deny.error", "No incoming teleport requests found");
+
+        addCommand("tpa.cancel", "Cancelled teleportation request");
+        addCommand("tpa.cancel.source", "Teleportation to %s cancelled");
+        addCommand("tpa.cancel.target", "%s cancelled teleportation to you");
+        addCommand("tpa.cancel.error", "No outgoing teleport requests found");
+
+
+        addCommand("rtp", "Teleported to random location");
+        addCommand("rtp.search", "Searching for random location");
+
+        addCommand("spawn", "Teleported %s to the server spawn");
+        addCommand("spawn.set", "Set the server spawn to %s, %s, %s in %s");
+        addCommand("spawn.delete", "Deleted the server spawn");
+        addCommand("spawn.error", "Failed to teleport to server spawn");
+        addCommand("spawn.error.doesnt_exist", "No server spawn exists");
+        addCommand("spawn.set.error", "Failed to set server spawn");
+        addCommand("spawn.delete.error", "Failed to delete server spawn");
+
+        addCommand("home", "Teleported %s to home \"%s\"");
+        addCommand("home.set", "Created home \"%s\" at %s, %s, %s in %s");
+        addCommand("home.delete", "Deleted home \"%s\"");
+        addCommand("home.error", "Failed to teleport to home");
+        addCommand("home.error.doesnt_exist", "Home doesn't exist");
+        addCommand("home.error.already_exists", "Home already exists");
+        addCommand("home.set.error", "Failed to set home");
+        addCommand("home.delete.error", "Failed to delete home");
+
+        addCommand("warp", "Teleported %s to warp \"%s\"");
+        addCommand("warp.set", "Created warp \"%s\" at %s, %s, %s in %s");
+        addCommand("warp.delete", "Deleted warp \"%s\"");
+        addCommand("warp.error", "Failed to teleport to warp");
+        addCommand("warp.error.doesnt_exist", "Warp doesn't exist");
+        addCommand("warp.error.already_exists", "Warp already exists");
+        addCommand("warp.set.error", "Failed to set warp");
+        addCommand("warp.delete.error", "Failed to delete warp");
+
+        addCommand("hat", "Equipped %s %s as a hat");
+        addCommand("hat.error", "Hand is empty");
+
+        addCommand("claim.error.noClaim", "There is no claim at that location");
+        addCommand("claim.error.alreadyOwner", "Claim owner was not changed");
+        addCommand("claim.info.location", "Info for claim at chunk %s in %s:");
+        addCommand("claim.info.owner", "Owner: %s");
+        addCommand("claim.info.surveyorTableLocation", "Surveyor Table Location: (%d, %d, %d)");
+        addCommand("claim.info.surveyorTableLocation.unknown", "Surveyor Table Location: N/A");
+        addCommand("claim.info.allowExplosions", "Allow Explosions: %s");
+        addCommand("claim.info.allowPlace", "Allow Block Placement: %s");
+        addCommand("claim.info.allowBreak", "Allow Block Destruction: %s");
+        addCommand("claim.info.allowInteractWithContainers", "Allow Opening Containers: %s");
+        addCommand("claim.info.allowInteractWithDoors", "Allow Opening Doors: %s");
+        addCommand("claim.info.allowInteractWithRedstone", "Allow Redstone Manipulation: %s");
+        addCommand("claim.info.allowInteractWithRedstoneActivators", "Allow Buttons/Levers: %s");
+        addCommand("claim.info.allowInteractWithSigns", "Allow Sign Interaction: %s");
+        addCommand("claim.info.allowInteractWithOther", "Allow Other Block Interactions: %s");
+        addCommand("claim.info.allowDrop", "Allow Item Dropping: %s");
+        addCommand("claim.changeOwner.success", "Successfully changed the owner of the claim containing (%d, %d, %d)");
+        addCommand("claim.remove.success", "Successfully removed the claim containing (%d, %d, %d)");
+
+        addArgument("entity_filter.no_one", "No one");
+        addArgument("entity_filter.owner_only", "Owner only");
+        addArgument("entity_filter.owner_and_mobs", "Owner and non-players");
+        addArgument("entity_filter.friends", "Friends");
+        addArgument("entity_filter.friends_and_mobs", "Friends and non-players");
+        addArgument("entity_filter.players", "Players");
+        addArgument("entity_filter.mobs", "Non-players");
+        addArgument("entity_filter.anyone", "Anyone");
+        
+        addArgument("entity_filter.invalid", "Invalid entity filter: %s");
+        addArgument("player_filter.invalid", "Invalid player filter: %s");
+
+        addGeneric("claim.action_blocked", "This chunk is owned by %s");
+        addGeneric("claim.destroyed", "Your chunk claim at (%d, %d, %d) was destroyed!");
+        addGeneric("claim.created", "New chunk claim created at (%d, %d, %d)");
+        addGeneric("claim.surveyor_table_already_exists", "A claim already exists within this chunk!");
+        addGeneric("claim.owner.no_one", "no one");
+        addGeneric("claim.owner.someone_else", "someone else");
+
+        addCommonConfig("max_chunk_claims", "Max Chunk Claims");
+
+        addPackDescription("mod", "Ozone Resources");
+    }
+
+    public void addArgument(String key, String name) {
+        add("argument." + this.id + "." + key, name);
     }
 }

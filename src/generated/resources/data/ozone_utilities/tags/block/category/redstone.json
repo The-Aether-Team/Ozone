@@ -1,0 +1,9 @@
+{
+  "values": [
+    "minecraft:repeater",
+    "minecraft:comparator",
+    "minecraft:calibrated_sculk_sensor",
+    "minecraft:daylight_detector",
+    "minecraft:redstone_wire"
+  ]
+}

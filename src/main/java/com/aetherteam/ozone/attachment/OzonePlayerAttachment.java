@@ -58,6 +58,7 @@ public class OzonePlayerAttachment {
                         PacketDistributor.sendToPlayer(serverPlayer, new WarpSuggestionPacket(overworld.getData(OzoneDataAttachments.LEVEL).getWarpCommandSuggestions()));
                     }
                 }
+                
             }
             this.shouldSyncAfterJoin = false;
         }

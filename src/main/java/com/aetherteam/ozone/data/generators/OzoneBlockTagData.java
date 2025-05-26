@@ -31,6 +31,8 @@ public class OzoneBlockTagData extends BlockTagsProvider {
             .addOptional(ResourceLocation.fromNamespaceAndPath("aether", "freezer"))
             .addOptional(ResourceLocation.fromNamespaceAndPath("aether", "incubator"))
             .addOptional(ResourceLocation.fromNamespaceAndPath("aetherii", "skyroot_chest"));
+        tag(OzoneBlockTags.REDSTONE)
+            .add(Blocks.REPEATER, Blocks.COMPARATOR, Blocks.CALIBRATED_SCULK_SENSOR, Blocks.DAYLIGHT_DETECTOR, Blocks.REDSTONE_WIRE);
         tag(OzoneBlockTags.REDSTONE_ACTIVATORS)
             .addTags(BlockTags.BUTTONS, Tags.Blocks.CHESTS_TRAPPED)
             .add(Blocks.LEVER, Blocks.TARGET);

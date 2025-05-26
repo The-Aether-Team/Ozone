@@ -24,6 +24,6 @@ public class BlockItemMixin {
         Player player = context.getPlayer();
         if (level.getBlockEntity(pos) instanceof BaseContainerBlockEntity blockEntity && player != null) {
             blockEntity.setData(OzoneDataAttachments.OWNER.get(), Optional.of(player.getUUID()));
-        }
+        } 
     }
 }

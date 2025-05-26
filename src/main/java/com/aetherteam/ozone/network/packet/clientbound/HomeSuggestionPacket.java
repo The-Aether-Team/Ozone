@@ -25,9 +25,9 @@ public record HomeSuggestionPacket(List<String> homes) implements CustomPacketPa
         return TYPE;
     }
 
-    public static void execute(HomeSuggestionPacket payload, IPayloadContext context) {
+    public void execute(IPayloadContext context) {
         if (Minecraft.getInstance().player != null && Minecraft.getInstance().level != null) {
-            Minecraft.getInstance().player.getData(OzoneDataAttachments.PLAYER).setHomeCommandSuggestions(payload.homes());
+            Minecraft.getInstance().player.getData(OzoneDataAttachments.PLAYER).setHomeCommandSuggestions(homes);
         }
     }
 }

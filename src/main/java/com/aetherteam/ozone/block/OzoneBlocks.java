@@ -1,7 +1,12 @@
 package com.aetherteam.ozone.block;
 
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
 import com.aetherteam.ozone.Ozone;
 import com.aetherteam.ozone.item.OzoneItems;
+
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -14,10 +19,6 @@ import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import net.minecraft.world.level.material.MapColor;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
-
-import java.util.Objects;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class OzoneBlocks {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(Ozone.MODID);

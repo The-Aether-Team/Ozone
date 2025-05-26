@@ -30,9 +30,9 @@ public record WarpSuggestionPacket(List<String> warps) implements CustomPacketPa
         return TYPE;
     }
 
-    public static void execute(WarpSuggestionPacket payload, IPayloadContext context) {
+    public void execute(IPayloadContext context) {
         if (Minecraft.getInstance().level != null) {
-            Minecraft.getInstance().level.getData(OzoneDataAttachments.LEVEL).setWarpCommandSuggestions(payload.warps());
+            Minecraft.getInstance().level.getData(OzoneDataAttachments.LEVEL).setWarpCommandSuggestions(warps);
         }
     }
 }

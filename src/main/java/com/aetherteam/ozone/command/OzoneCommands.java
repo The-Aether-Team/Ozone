@@ -1,8 +1,16 @@
 package com.aetherteam.ozone.command;
 
-import com.aetherteam.ozone.Ozone;
+import java.util.EnumSet;
+
+import com.aetherteam.ozone.command.admin.ClaimCommand;
 import com.aetherteam.ozone.command.fun.HatCommand;
-import com.aetherteam.ozone.command.teleport.*;
+import com.aetherteam.ozone.command.teleport.BackCommand;
+import com.aetherteam.ozone.command.teleport.HomeCommand;
+import com.aetherteam.ozone.command.teleport.RtpCommand;
+import com.aetherteam.ozone.command.teleport.SpawnCommand;
+import com.aetherteam.ozone.command.teleport.TpaCommand;
+import com.aetherteam.ozone.command.teleport.WarpCommand;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -12,26 +20,21 @@ import net.minecraft.world.entity.Relative;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.EventHooks;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.EntityTeleportEvent;
 
-import java.util.EnumSet;
-
-@EventBusSubscriber(modid = Ozone.MODID, bus = EventBusSubscriber.Bus.GAME)
 public class OzoneCommands {
-    @SubscribeEvent
     public static void registerCommands(RegisterCommandsEvent event) {
-        BackCommand.register(event.getDispatcher());
-        TpaCommand.register(event.getDispatcher());
-        RtpCommand.register(event.getDispatcher());
-        SpawnCommand.register(event.getDispatcher());
-        HomeCommand.register(event.getDispatcher());
-        WarpCommand.register(event.getDispatcher());
-
-        HatCommand.register(event.getDispatcher());
+        var dispatcher = event.getDispatcher();
+        BackCommand.register(dispatcher);
+        TpaCommand.register(dispatcher);
+        RtpCommand.register(dispatcher);
+        SpawnCommand.register(dispatcher);
+        HomeCommand.register(dispatcher);
+        WarpCommand.register(dispatcher);
+        HatCommand.register(dispatcher);
+        ClaimCommand.register(dispatcher);
     }
 
     public static BlockPos getCorrectPosition(ServerPlayer entity) {
