@@ -42,7 +42,7 @@ public class TpaCommand {
         if (source.getEntityOrException() instanceof ServerPlayer you) {
             if (!you.getUUID().equals(other.getUUID())) {
                 OzoneLevelAttachment.TeleportRequest request = new OzoneLevelAttachment.TeleportRequest(you.getUUID(), other.getUUID());
-                ServerLevel overworld = OzoneLevelAttachment.getOverworld(source.getServer());
+                ServerLevel overworld = source.getServer().overworld();
                 if (overworld != null) {
                     Set<OzoneLevelAttachment.TeleportRequest> queue = overworld.getData(OzoneDataAttachments.LEVEL).getTpaQueue();
                     if (!queue.contains(request)) {
@@ -66,7 +66,7 @@ public class TpaCommand {
         if (source.getEntityOrException() instanceof ServerPlayer you) {
             if (!you.getUUID().equals(other.getUUID())) {
                 OzoneLevelAttachment.TeleportRequest request = new OzoneLevelAttachment.TeleportRequest(other.getUUID(), you.getUUID());
-                ServerLevel overworld = OzoneLevelAttachment.getOverworld(source.getServer());
+                ServerLevel overworld = source.getServer().overworld();
                 if (overworld != null) {
                     Set<OzoneLevelAttachment.TeleportRequest> queue = overworld.getData(OzoneDataAttachments.LEVEL).getTpaQueue();
                     if (!queue.contains(request)) {
@@ -97,7 +97,7 @@ public class TpaCommand {
     public static int accept(CommandSourceStack source) throws CommandSyntaxException {
         if (source.getEntityOrException() instanceof ServerPlayer you) {
             UUID yourUUID = you.getUUID();
-            ServerLevel overworld = OzoneLevelAttachment.getOverworld(source.getServer());
+            ServerLevel overworld = source.getServer().overworld();
             if (overworld != null) {
                 Set<OzoneLevelAttachment.TeleportRequest> queue = overworld.getData(OzoneDataAttachments.LEVEL).getTpaQueue();
 
@@ -126,7 +126,7 @@ public class TpaCommand {
     public static int deny(CommandSourceStack source) throws CommandSyntaxException {
         if (source.getEntityOrException() instanceof ServerPlayer you) {
             UUID yourUUID = you.getUUID();
-            ServerLevel overworld = OzoneLevelAttachment.getOverworld(source.getServer());
+            ServerLevel overworld = source.getServer().overworld();
             if (overworld != null) {
                 Set<OzoneLevelAttachment.TeleportRequest> queue = overworld.getData(OzoneDataAttachments.LEVEL).getTpaQueue();
 
@@ -165,7 +165,7 @@ public class TpaCommand {
     public static int cancel(CommandSourceStack source) throws CommandSyntaxException {
         if (source.getEntityOrException() instanceof ServerPlayer you) {
             UUID yourUUID = you.getUUID();
-            ServerLevel overworld = OzoneLevelAttachment.getOverworld(source.getServer());
+            ServerLevel overworld = source.getServer().overworld();
             if (overworld != null) {
                 Set<OzoneLevelAttachment.TeleportRequest> queue = overworld.getData(OzoneDataAttachments.LEVEL).getTpaQueue();
 

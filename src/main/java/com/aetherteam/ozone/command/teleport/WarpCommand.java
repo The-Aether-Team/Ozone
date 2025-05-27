@@ -35,7 +35,7 @@ public class WarpCommand {
 
     private static int teleportToWarp(CommandSourceStack source, String warpName) throws CommandSyntaxException {
         if (source.getEntityOrException() instanceof ServerPlayer sender) {
-            ServerLevel overworld = OzoneLevelAttachment.getOverworld(source.getServer());
+            ServerLevel overworld = source.getServer().overworld();
             if (overworld != null) {
                 Map<String, GlobalPos> warps = overworld.getData(OzoneDataAttachments.LEVEL).getWarps();
                 if (warps.containsKey(warpName)) {
@@ -56,7 +56,7 @@ public class WarpCommand {
 
     private static int setWarp(CommandSourceStack source, String warpName) throws CommandSyntaxException {
         if (source.getEntityOrException() instanceof ServerPlayer sender) {
-            ServerLevel overworld = OzoneLevelAttachment.getOverworld(source.getServer());
+            ServerLevel overworld = source.getServer().overworld();
             if (overworld != null) {
                 Map<String, GlobalPos> warps = overworld.getData(OzoneDataAttachments.LEVEL).getWarps();
                 if (!warps.containsKey(warpName)) {
@@ -75,7 +75,7 @@ public class WarpCommand {
 
     private static int deleteWarp(CommandSourceStack source, String warpName) throws CommandSyntaxException {
         if (source.getEntityOrException() instanceof ServerPlayer sender) {
-            ServerLevel overworld = OzoneLevelAttachment.getOverworld(source.getServer());
+            ServerLevel overworld = source.getServer().overworld();
             if (overworld != null) {
                 Map<String, GlobalPos> warps = overworld.getData(OzoneDataAttachments.LEVEL).getWarps();
                 if (warps.containsKey(warpName)) {

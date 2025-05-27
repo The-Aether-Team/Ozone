@@ -9,6 +9,10 @@ public class OzoneConfig {
         return MAX_CHUNK_CLAIMS.getAsInt();
     }
 
+    public static void setMaxChunkClaims(int maxChunkClaims) {
+        MAX_CHUNK_CLAIMS.set(maxChunkClaims);
+    }
+
     static final ModConfigSpec SPEC;
 
     static {

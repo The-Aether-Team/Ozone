@@ -98,6 +98,7 @@ public class OzoneLanguageData extends NitrogenLanguageProvider {
         addCommand("claim.info.allowDrop", "Allow Item Dropping: %s");
         addCommand("claim.changeOwner.success", "Successfully changed the owner of the claim containing (%d, %d, %d)");
         addCommand("claim.remove.success", "Successfully removed the claim containing (%d, %d, %d)");
+        addCommand("claim.filter.success", "Successfully modified claim filter");
 
         addArgument("entity_filter.no_one", "No one");
         addArgument("entity_filter.owner_only", "Owner only");
@@ -117,6 +118,9 @@ public class OzoneLanguageData extends NitrogenLanguageProvider {
         addGeneric("claim.surveyor_table_already_exists", "A claim already exists within this chunk!");
         addGeneric("claim.owner.no_one", "no one");
         addGeneric("claim.owner.someone_else", "someone else");
+        addGeneric("claim.limit_reached", "You have reached your claim limit of %s");
+        addGeneric("claim.limit.plural", "%s blocks");
+        addGeneric("claim.limit.singular", "1 block");
 
         addCommonConfig("max_chunk_claims", "Max Chunk Claims");
 

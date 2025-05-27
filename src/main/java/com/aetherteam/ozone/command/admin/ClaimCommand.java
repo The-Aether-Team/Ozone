@@ -1,20 +1,22 @@
 package com.aetherteam.ozone.command.admin;
 
+import java.util.UUID;
 import java.util.function.BiConsumer;
 
 import org.apache.commons.lang3.function.TriFunction;
 
+import com.aetherteam.ozone.OzoneConfig;
+import com.aetherteam.ozone.attachment.GlobalChunkPos;
 import com.aetherteam.ozone.attachment.OzoneChunkAttachment;
-import com.aetherteam.ozone.attachment.OzoneChunkAttachment.EntityFilterField;
-import com.aetherteam.ozone.attachment.OzoneChunkAttachment.PlayerFilterField;
 import com.aetherteam.ozone.attachment.OzoneDataAttachments;
+import com.aetherteam.ozone.attachment.OzoneLevelAttachment;
 import com.aetherteam.ozone.command.argument.EntityFilterArgument;
 import com.aetherteam.ozone.command.argument.PlayerFilterArgument;
 import com.aetherteam.ozone.command.argument.SingleGameProfileArgument;
-import com.aetherteam.ozone.data.OzoneData;
 import com.aetherteam.ozone.network.packet.clientbound.ChunkClaimPacket;
 import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
@@ -27,7 +29,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Position;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -44,7 +45,7 @@ public class ClaimCommand {
                         .then(
                             Commands.argument("pos", BlockPosArgument.blockPos())
                                 .executes(
-                                    context -> getClaimInfo(context.getSource(), BlockPosArgument.getLoadedBlockPos(context, "pos"))
+                                    context -> removeClaim(context.getSource(), BlockPosArgument.getLoadedBlockPos(context, "pos"))
                                 )
                         )
                         .executes(
@@ -67,13 +68,23 @@ public class ClaimCommand {
                     addFilters(Commands.literal("filter"))
                 )
                 .then(
-                    Commands.argument("pos", BlockPosArgument.blockPos())
+                    Commands.literal("owner")
                         .then(
                             Commands.argument("target", SingleGameProfileArgument.gameProfile())
+                                .then(
+                                    Commands.argument("pos", BlockPosArgument.blockPos())
+                                        .executes(
+                                            context -> setClaim(
+                                                    context.getSource(),
+                                                    BlockPosArgument.getLoadedBlockPos(context, "pos"),
+                                                    SingleGameProfileArgument.getGameProfile(context, "target")
+                                                )
+                                        )
+                                )
                                 .executes(
                                     context -> setClaim(
                                             context.getSource(),
-                                            BlockPosArgument.getLoadedBlockPos(context, "pos"),
+                                            getLoadedBlockPos(context.getSource()),
                                             SingleGameProfileArgument.getGameProfile(context, "target")
                                         )
                                 )
@@ -81,16 +92,46 @@ public class ClaimCommand {
                         .executes(
                             context -> setClaim(
                                     context.getSource(),
-                                    BlockPosArgument.getLoadedBlockPos(context, "pos"),
+                                    getLoadedBlockPos(context.getSource()),
                                     context.getSource().getPlayerOrException().getGameProfile()
                                 )
                         )
                 )
-                .executes(
-                    context -> setClaim(
-                            context.getSource(),
-                            getLoadedBlockPos(context.getSource()),
-                            context.getSource().getPlayerOrException().getGameProfile()
+                .then(
+                    Commands.literal("config")
+                        .then(
+                            Commands.literal("maxChunkClaims")
+                                .then(
+                                    Commands.argument("maxChunkClaims", IntegerArgumentType.integer(0))
+                                        .executes(
+                                            context -> {
+                                                int maxChunkClaims = IntegerArgumentType.getInteger(context, "maxChunkClaims");
+                                                OzoneConfig.setMaxChunkClaims(maxChunkClaims);
+                                                context.getSource().sendSuccess(() -> Component.literal("maxChunkClaims has been set to: " + maxChunkClaims), true);
+                                                return 1;
+                                            }
+                                        )
+                                )
+                                .executes(
+                                    context -> {
+                                        int maxChunkClaims = OzoneConfig.getMaxChunkClaims();
+                                        context.getSource().sendSuccess(() -> Component.literal("maxChunkClaims is currently set to: " + maxChunkClaims), true);
+                                        return 1;
+                                    }
+                                )
+                        )
+                )
+                .then(
+                    Commands.literal("list")
+                        .executes(
+                            context -> {
+                                UUID owner = context.getSource().getPlayerOrException().getUUID();
+                                OzoneLevelAttachment levelData = context.getSource().getServer().overworld().getData(OzoneDataAttachments.LEVEL);
+                                for (var claim : levelData.getPlayerClaims(owner)) {
+                                    context.getSource().sendSuccess(() -> Component.translatableWithFallback("commands.ozone_utilities.claim.list", "%s in %s", Component.translatable(claim.dimension().location().toLanguageKey("dimension")), Component.translationArg(claim.pos())), true);
+                                }
+                                return 1;
+                            }
                         )
                 )
         );
@@ -134,7 +175,7 @@ public class ClaimCommand {
         return builder;
     }
 
-    public static <F extends BiConsumer<? super OzoneChunkAttachment, ? super T>, T> int setFilter(CommandSourceStack source, BlockPos pos, F field, T filter, TriFunction<? super ChunkPos, ? super F, ? super T, ? extends ChunkClaimPacket> packetCreator) throws CommandSyntaxException {
+    public static <F extends BiConsumer<? super OzoneChunkAttachment, ? super T>, T> int setFilter(CommandSourceStack source, BlockPos pos, F field, T filter, TriFunction<? super GlobalChunkPos, ? super F, ? super T, ? extends ChunkClaimPacket> packetCreator) throws CommandSyntaxException {
         ServerLevel level = source.getLevel();
         if (!level.isAreaLoaded(pos, 0)) {
             throw BlockPosArgument.ERROR_NOT_LOADED.create();
@@ -152,10 +193,10 @@ public class ClaimCommand {
         }
 
         field.accept(claim, filter);
+        PacketDistributor.sendToPlayersTrackingChunk(level, chunk.getPos(), packetCreator.apply(GlobalChunkPos.of(level.dimension(), chunk.getPos()), field, filter));
         chunk.setData(OzoneDataAttachments.CHUNK, claim);
         
         source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.claim.filter.success"), true);
-        PacketDistributor.sendToPlayersTrackingChunk(level, chunk.getPos(), packetCreator.apply(chunk.getPos(), field, filter));
         return 1;
     }
 
@@ -250,16 +291,22 @@ public class ClaimCommand {
         }
 
         ChunkAccess chunk = level.getChunk(pos);
+        if (!chunk.hasData(OzoneDataAttachments.CHUNK)) {
+            throw ERROR_NO_CLAIM.create();
+        }
+
         OzoneChunkAttachment claim = chunk.getData(OzoneDataAttachments.CHUNK);
+        if (!claim.hasOwner()) {
+            throw ERROR_NO_CLAIM.create();
+        }
         if (claim.isOwner(newOwner.getId())) {
             throw ERROR_ALREADY_CLAIMED.create();
         }
         
-        claim.setOwner(newOwner.getId());
+        claim.changeOwner(level, newOwner.getId());
         chunk.setData(OzoneDataAttachments.CHUNK, claim);
         
         source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.claim.changeOwner.success", pos.getX(), pos.getY(), pos.getZ()), true);
-        PacketDistributor.sendToPlayersTrackingChunk(level, chunk.getPos(), new ChunkClaimPacket.ChangeOwner(chunk.getPos(), newOwner.getId()));
         return 1;
     }
 
@@ -283,15 +330,10 @@ public class ClaimCommand {
             throw ERROR_NO_CLAIM.create();
         }
         
-        claim.setOwner(null);
-        claim.getSurveyorTableLocation().ifPresent(surveyorTablePos -> {
-            level.destroyBlock(surveyorTablePos, true);
-            claim.setSurveyorTableLocation(null);
-        });
+        claim.removeOwner(level);
         chunk.removeData(OzoneDataAttachments.CHUNK);
         
         source.sendSuccess(() -> Component.translatable("commands.ozone_utilities.claim.remove.success", pos.getX(), pos.getY(), pos.getZ()), true);
-        PacketDistributor.sendToPlayersTrackingChunk(level, chunk.getPos(), new ChunkClaimPacket.Delete(chunk.getPos()));
         return 1;
     }
 

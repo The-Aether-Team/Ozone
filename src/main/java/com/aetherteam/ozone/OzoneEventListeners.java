@@ -1,20 +1,26 @@
 package com.aetherteam.ozone;
 
+import java.util.UUID;
+
+import com.aetherteam.ozone.attachment.GlobalChunkPos;
 import com.aetherteam.ozone.attachment.OzoneChunkAttachment;
 import com.aetherteam.ozone.attachment.OzoneChunkAttachment.BlockCategory;
 import com.aetherteam.ozone.attachment.OzoneDataAttachments;
+import com.aetherteam.ozone.attachment.OzoneLevelAttachment;
+import com.aetherteam.ozone.block.OzoneBlocks;
 import com.aetherteam.ozone.event.hooks.PlayerHooks;
 import com.aetherteam.ozone.network.packet.clientbound.ChunkClaimPacket;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.neoforge.common.util.TriState;
 import net.neoforged.neoforge.event.entity.EntityTeleportEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDestroyBlockEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerChangedDimensionEvent;
@@ -83,16 +89,15 @@ public class OzoneEventListeners {
 
     private static void onPlayerWatchChunk(ChunkWatchEvent.Sent event) {
         ChunkAccess chunk = event.getChunk();
-        ChunkPos pos = chunk.getPos();
+        ServerLevel level = event.getLevel();
+        GlobalChunkPos pos = GlobalChunkPos.of(level.dimension(), chunk.getPos());
         ServerPlayer player = event.getPlayer();
         if (chunk.hasData(OzoneDataAttachments.CHUNK)) {
             OzoneChunkAttachment claim = chunk.getData(OzoneDataAttachments.CHUNK);
-            claim.getOwner().ifPresent(owner -> {
-                claim.getSurveyorTableLocation().ifPresentOrElse(
-                    surveyorTableLocation -> PacketDistributor.sendToPlayer(player, new ChunkClaimPacket.ChangeOwnerAndSurveyorTableLocation(pos, owner, surveyorTableLocation)),
-                    () -> PacketDistributor.sendToPlayer(player, new ChunkClaimPacket.ChangeOwner(pos, owner))
-                );
-                PacketDistributor.sendToPlayer(player, new ChunkClaimPacket.ChangeFilters(pos, claim.getFilters()));
+            claim.getOwnerInfo().ifPresent(owner -> {
+                PacketDistributor.sendToPlayer(player,
+                    new ChunkClaimPacket.ChangeOwnerAndSurveyorTableLocation(pos, owner.getUUID(), owner.getSurveyorTableLocation()),
+                    new ChunkClaimPacket.ChangeFilters(pos, claim.getFilters()));
             });
         }
     }
@@ -118,7 +123,7 @@ public class OzoneEventListeners {
                         claim.sendDenyMessage(event.getEntity());
                     }
                     Ozone.LOGGER.info("Canceled left-click interaction at ({}, {}, {}) for {} (uuid {})", event.getPos().getX(), event.getPos().getY(), event.getPos().getZ(), event.getEntity().getGameProfile().getName(), event.getEntity().getUUID());
-                }
+                } 
             }
             default -> {}
         }
@@ -127,13 +132,25 @@ public class OzoneEventListeners {
     private static void onPlayerRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         ChunkAccess chunk = event.getLevel().getChunk(event.getPos());
         if (!chunk.hasData(OzoneDataAttachments.CHUNK)) return;
-         OzoneChunkAttachment claim = chunk.getData(OzoneDataAttachments.CHUNK);
+        OzoneChunkAttachment claim = chunk.getData(OzoneDataAttachments.CHUNK);
         
         if (claim.hasOwner()) {
+            var state = event.getLevel().getBlockState(event.getPos());
+            if (state.getBlock() == OzoneBlocks.SURVEYOR_TABLE.get()) {
+                if(!claim.isOwner(event.getEntity())) {
+                    if (!event.getLevel().isClientSide) {
+                        event.setCancellationResult(InteractionResult.PASS);
+                        event.setCanceled(true);
+                        claim.sendDenyMessage(event.getEntity());
+                        Ozone.LOGGER.info("Canceled right-click interaction at ({}, {}, {}) for {} (uuid {})", event.getPos().getX(), event.getPos().getY(), event.getPos().getZ(), event.getEntity().getGameProfile().getName(), event.getEntity().getUUID());
+                    }
+                }
+                return;
+            }
             var categories = BlockCategory.of(event.getLevel().getBlockState(event.getPos()));
-            if (!categories.isEmpty()) {
+            if (!categories.isEmpty()) {                
                 for (var category : categories) {
-                    if (!category.isInteractAllowed(event.getEntity(), claim)) {
+                    if (!(category == BlockCategory.CONTAINERS? claim.allowInteractWithContainers(state, event.getEntity()) : category.isInteractAllowed(event.getEntity(), claim))) {
                         if (!event.getLevel().isClientSide) {
                             event.setCancellationResult(InteractionResult.PASS);
                             event.setCanceled(true);
@@ -155,20 +172,41 @@ public class OzoneEventListeners {
         Ozone.LOGGER.info("{} right-clicked air at ({}, {}, {})", event.getEntity().getGameProfile().getName(), event.getPos().getX(), event.getPos().getY(), event.getPos().getZ());
     }
 
+    private static boolean checkForMaxClaims(BlockState blockState, Entity entity, UUID ownerUUID) {
+        if (blockState.getBlock() != OzoneBlocks.SURVEYOR_TABLE.get()) return false;
+        if (!entity.getUUID().equals(ownerUUID)) return false;
+        Level overworld = entity.level();
+        if (overworld.dimension() != Level.OVERWORLD) {
+            if (overworld.getServer() == null) return false;
+            overworld = overworld.getServer().overworld();
+        }
+        OzoneLevelAttachment levelData = overworld.getData(OzoneDataAttachments.LEVEL);
+        return levelData.getPlayerClaimCount(ownerUUID) >= OzoneConfig.getMaxChunkClaims();
+    }
+
     private static void onBlockPlace(EntityPlaceEvent event) {
         ChunkAccess chunk = event.getLevel().getChunk(event.getPos());
         if (!chunk.hasData(OzoneDataAttachments.CHUNK)) return;
         OzoneChunkAttachment claim = chunk.getData(OzoneDataAttachments.CHUNK);
-        
-        if (!claim.allowPlace(event.getPlacedBlock(), event.getEntity())) {
-            event.setCanceled(true);
-            if (!event.getLevel().isClientSide()) {
-                if (event.getEntity() instanceof Player player) {
-                    claim.sendDenyMessage(player);
+        claim.getOwnerInfo().ifPresent(owner -> {
+            if (!claim.allowPlace(event.getPlacedBlock(), event.getEntity())) {
+                event.setCanceled(true);
+                if (!event.getLevel().isClientSide()) {
+                    if (event.getEntity() instanceof Player player) {
+                        claim.sendDenyMessage(player);
+                    }
                 }
-            }
-            Ozone.LOGGER.info("Canceled block placement at ({}, {}, {}) for {} (uuid {})", event.getPos().getX(), event.getPos().getY(), event.getPos().getZ(), event.getEntity().getName().getString(), event.getEntity().getUUID());
-        }
+                Ozone.LOGGER.info("Canceled block placement at ({}, {}, {}) for {} (uuid {})", event.getPos().getX(), event.getPos().getY(), event.getPos().getZ(), event.getEntity().getName().getString(), event.getEntity().getUUID());
+            }/*  else if (checkForMaxClaims(event.getPlacedBlock(), event.getEntity(), owner.getUUID())) {
+                event.setCanceled(true);
+                if (!event.getLevel().isClientSide()) {
+                    if (event.getEntity() instanceof Player player) {
+                        claim.sendClaimLimitReachedMessage(player, OzoneConfig.getMaxChunkClaims());
+                    }
+                }
+                Ozone.LOGGER.info("Canceled block placement at ({}, {}, {}) for {} (uuid {})", event.getPos().getX(), event.getPos().getY(), event.getPos().getZ(), event.getEntity().getName().getString(), event.getEntity().getUUID());
+            } */
+        });
     }
 
     private static void onMultiBlockPlace(EntityMultiPlaceEvent event) {
@@ -176,7 +214,7 @@ public class OzoneEventListeners {
             ChunkAccess chunk = event.getLevel().getChunk(block.getPos());
             if (!chunk.hasData(OzoneDataAttachments.CHUNK)) continue;
             OzoneChunkAttachment claim = chunk.getData(OzoneDataAttachments.CHUNK);
-            
+            if (!claim.hasOwner()) continue;            
             if (!claim.allowPlace(block.getState(), event.getEntity())) {
                 event.setCanceled(true);
                 if (event.getEntity() instanceof Player player) {
@@ -184,7 +222,15 @@ public class OzoneEventListeners {
                 }
                 Ozone.LOGGER.info("Canceled multi block placement at ({}, {}, {}) for {} (uuid {})", event.getPos().getX(), event.getPos().getY(), event.getPos().getZ(), event.getEntity().getName().getString(), event.getEntity().getUUID());
                 break;
-            }
+            }/*  else if (checkForMaxClaims(block.getState(), event.getEntity(), claim.getOwner().get())) {
+                event.setCanceled(true);
+                if (!event.getLevel().isClientSide()) {
+                    if (event.getEntity() instanceof Player player) {
+                        claim.sendClaimLimitReachedMessage(player, OzoneConfig.getMaxChunkClaims());
+                    }
+                }
+                Ozone.LOGGER.info("Canceled block placement at ({}, {}, {}) for {} (uuid {})", event.getPos().getX(), event.getPos().getY(), event.getPos().getZ(), event.getEntity().getName().getString(), event.getEntity().getUUID());
+            } */
         }
     }
 

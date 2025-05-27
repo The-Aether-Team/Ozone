@@ -16,7 +16,10 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import org.apache.commons.lang3.Validate;
+
 import com.aetherteam.ozone.block.OzoneBlocks;
+import com.aetherteam.ozone.network.packet.clientbound.ChunkClaimPacket;
 import com.aetherteam.ozone.tags.OzoneBlockTags;
 import com.mojang.authlib.GameProfile;
 import com.mojang.serialization.Codec;
@@ -29,21 +32,24 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.SkullBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 public class OzoneChunkAttachment {
+    public final ChunkPos chunkPos;
     @Nullable
-    private UUID owner;
-    @Nullable
-    private BlockPos surveyorTableLocation;
+    private OwnerInfo owner;
     private final Filters filters;
     
     public void resetPermissions() {
@@ -51,26 +57,27 @@ public class OzoneChunkAttachment {
     }
 
     public static final Codec<OzoneChunkAttachment> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            UUIDUtil.CODEC.optionalFieldOf("owner").forGetter(OzoneChunkAttachment::getOwner),
-            BlockPos.CODEC.optionalFieldOf("surveyorTableLocation").forGetter(OzoneChunkAttachment::getSurveyorTableLocation),
+            ChunkPos.CODEC.fieldOf("chunkPos").forGetter(OzoneChunkAttachment::getChunkPos),
+            OwnerInfo.CODEC.optionalFieldOf("owner").forGetter(OzoneChunkAttachment::getOwnerInfo),
             Filters.CODEC.optionalFieldOf("filters").forGetter($this -> Optional.of($this.filters))
     ).apply(instance, OzoneChunkAttachment::new));
 
-    public OzoneChunkAttachment() {
+    public OzoneChunkAttachment(ChunkPos chunkPos) {
+        this.chunkPos = Validate.notNull(chunkPos, "chunkPos was null");
         this.filters = new Filters();
         resetPermissions();
     }
 
-    public OzoneChunkAttachment(Optional<UUID> owner, Optional<BlockPos> surveyorTableLocation, Optional<Filters> filters) {
+    public OzoneChunkAttachment(ChunkPos chunkPos, Optional<OwnerInfo> owner, Optional<Filters> filters) {
+        this.chunkPos = Validate.notNull(chunkPos, "chunkPos was null");
         this.owner = owner.orElse(null);
-        this.surveyorTableLocation = surveyorTableLocation.orElse(null);
         this.filters = filters.orElseGet(Filters::new);
     }
 
     public void sendClaimCreatedMessageToOwner(MinecraftServer server, BlockPos claimPos) {
         var owner = this.owner;
         if (owner == null) return;
-        var player = server.getPlayerList().getPlayer(owner);
+        var player = server.getPlayerList().getPlayer(owner.uuid);
         if (player != null) {
             player.displayClientMessage(Component.translatable("ozone_utilities.claim.created", claimPos.getX(), claimPos.getY(), claimPos.getZ()).withStyle(ChatFormatting.GREEN), false);
         }
@@ -79,19 +86,23 @@ public class OzoneChunkAttachment {
     public void sendClaimRemovedMessageToOwner(MinecraftServer server, BlockPos claimPos) {
         var owner = this.owner;
         if (owner == null) return;
-        var player = server.getPlayerList().getPlayer(owner);
+        var player = server.getPlayerList().getPlayer(owner.uuid);
         if (player != null) {
             player.displayClientMessage(Component.translatable("ozone_utilities.claim.destroyed", claimPos.getX(), claimPos.getY(), claimPos.getZ()).withStyle(ChatFormatting.RED), false);
         }
+    }
+
+    public void sendClaimLimitReachedMessage(Player player, int limit) {
+        player.displayClientMessage(Component.translatable("ozone_utilities.claim.limit_reached", (limit == 1? Component.translatable("ozone_utilities.claim.limit.singular") : Component.translatable("ozone_utilities.claim.limit.plural", Integer.toUnsignedString(limit))).withStyle(ChatFormatting.RED)).withStyle(ChatFormatting.DARK_RED), true);
     }
 
     public void sendDenyMessage(Player player) {
         if (owner == null) {
             sendDenyMessage(player, Component.translatable("ozone_utilities.claim.owner.no_one"));
         } else if (player.getServer() != null) {
-            sendDenyMessage(player, player.getServer().getProfileCache().get(owner).map(OzoneChunkAttachment::getProfileName).or(() -> Optional.of(player.getServer().getPlayerList().getPlayer(owner).getName())).orElseGet(OzoneChunkAttachment::getSomeoneElse));
+            sendDenyMessage(player, player.getServer().getProfileCache().get(owner.uuid).map(OzoneChunkAttachment::getProfileName).or(() -> Optional.of(player.getServer().getPlayerList().getPlayer(owner.uuid).getName())).orElseGet(OzoneChunkAttachment::getSomeoneElse));
         } else {
-            SkullBlockEntity.fetchGameProfile(owner).thenAcceptAsync(profile -> {
+            SkullBlockEntity.fetchGameProfile(owner.uuid).thenAcceptAsync(profile -> {
                 sendDenyMessage(player, profile.map(OzoneChunkAttachment::getProfileName).orElseGet(OzoneChunkAttachment::getSomeoneElse));
             }, SkullBlockEntity.CHECKED_MAIN_THREAD_EXECUTOR);
         }
@@ -113,17 +124,166 @@ public class OzoneChunkAttachment {
         player.displayClientMessage(Component.translatable("ozone_utilities.claim.surveyor_table_already_exists").withStyle(ChatFormatting.RED), true);
     }
 
-    public Optional<UUID> getOwner() {
+    public ChunkPos getChunkPos() {
+        return chunkPos;
+    }
+
+    public Optional<OwnerInfo> getOwnerInfo() {
         return Optional.ofNullable(owner);
     }
 
-    public void setOwner(UUID owner) {
-        if (!Objects.equals(this.owner, owner)) {
-            this.owner = owner;
-            if (owner == null) {
-                // reset permissions to default values
-                resetPermissions();
+    public Optional<UUID> getOwner() {
+        return owner == null? Optional.empty() : Optional.of(owner.uuid);
+    }
+
+    public void setOwner(UUID owner, BlockPos surveyorTableLocation) {
+        Validate.notNull(owner, "owner was null");
+        if (!chunkPos.equals(new ChunkPos(surveyorTableLocation))) {
+            throw new IllegalArgumentException("desired surveyor table location (" + surveyorTableLocation.getX() + ", " + surveyorTableLocation.getY() + ", " + surveyorTableLocation.getZ() + ") is not within this object's chunk (" + chunkPos.x + ", " + chunkPos.z + ")");
+        }
+        if (this.owner == null) {
+            this.owner = new OwnerInfo(owner, surveyorTableLocation);
+        } else {
+            this.owner.uuid = owner;
+            this.owner.surveyorTableLocation = surveyorTableLocation;
+        }
+    }
+
+    public void setOwner(ServerLevel level, UUID owner, BlockPos surveyorTableLocation) {
+        setOwner(level, owner, surveyorTableLocation, true);
+    }
+
+    public void setOwner(ServerLevel level, UUID owner, BlockPos surveyorTableLocation, boolean removeOldSurveyorTable) {
+        Validate.notNull(owner, "owner was null");
+        if (!chunkPos.equals(new ChunkPos(surveyorTableLocation))) {
+            throw new IllegalArgumentException("desired surveyor table location (" + surveyorTableLocation.getX() + ", " + surveyorTableLocation.getY() + ", " + surveyorTableLocation.getZ() + ") is not within this object's chunk (" + chunkPos.x + ", " + chunkPos.z + ")");
+        }
+        var pos = GlobalChunkPos.of(level.dimension(), chunkPos);
+        ServerLevel overworld = level.getServer().overworld();
+        OzoneLevelAttachment levelData = overworld.getData(OzoneDataAttachments.LEVEL);
+        if (this.owner == null) {
+            this.owner = new OwnerInfo(owner, surveyorTableLocation);
+            levelData.addPlayerClaim(owner, pos);
+            overworld.setData(OzoneDataAttachments.LEVEL, levelData);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeOwnerAndSurveyorTableLocation(pos, owner, surveyorTableLocation));
+        } else if (!owner.equals(this.owner.uuid) || !surveyorTableLocation.equals(this.owner.surveyorTableLocation)) {
+            if (!owner.equals(this.owner.uuid)) {
+                levelData.removePlayerClaim(this.owner.uuid, pos);
+                levelData.addPlayerClaim(owner, pos);
+                overworld.setData(OzoneDataAttachments.LEVEL, levelData);
             }
+            this.owner.uuid = owner;
+            if (surveyorTableLocation.equals(this.owner.surveyorTableLocation)) {
+                PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeOwner(pos, owner));
+            } else {
+                if (removeOldSurveyorTable && level.getBlockState(this.owner.surveyorTableLocation).getBlock() == OzoneBlocks.SURVEYOR_TABLE.get()) {
+                    level.destroyBlock(this.owner.surveyorTableLocation, true);
+                }
+                this.owner.surveyorTableLocation = surveyorTableLocation;
+                PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeOwnerAndSurveyorTableLocation(pos, owner, surveyorTableLocation));
+            }
+        }
+    }
+
+    public void setOwner(Level level, UUID owner, BlockPos surveyorTableLocation) {
+        if (level.isClientSide) {
+            setOwner(owner, surveyorTableLocation);
+        } else {
+            setOwner((ServerLevel)level, owner, surveyorTableLocation);
+        }
+    }
+
+    public void setOwner(@Nullable OwnerInfo owner) {
+        if (!Objects.equals(this.owner, owner)) {
+            if (owner == null) {
+                removeOwner();
+            } else {
+                setOwner(owner.uuid, owner.surveyorTableLocation);
+            }
+        }
+    }
+
+    public void setOwner(ServerLevel level, @Nullable OwnerInfo owner) {
+        if (!Objects.equals(this.owner, owner)) {
+            if (owner == null) {
+                removeOwner(level);
+            } else {
+                setOwner(level, owner.uuid, owner.surveyorTableLocation);
+            }
+        }
+    }
+
+    public void setOwner(Level level, @Nullable OwnerInfo owner) {
+        if (level.isClientSide) {
+            setOwner(owner);
+        } else {
+            setOwner((ServerLevel)level, owner);
+        }
+    }
+
+    public void changeOwner(UUID owner) {
+        if (this.owner == null) {
+            throw new IllegalStateException("Cannot change owner until owner has been set");
+        }
+        this.owner.uuid = owner;
+    }
+
+    public void changeOwner(ServerLevel level, UUID owner) {
+        if (this.owner == null) {
+            throw new IllegalStateException("Cannot change owner until owner has been set");
+        }
+        if (!owner.equals(this.owner.uuid)) {
+            ServerLevel overworld = level.getServer().overworld();
+            OzoneLevelAttachment levelData = overworld.getData(OzoneDataAttachments.LEVEL);
+            var pos = GlobalChunkPos.of(level.dimension(), chunkPos);
+            levelData.removePlayerClaim(this.owner.uuid, pos);
+            levelData.addPlayerClaim(owner, pos);
+            overworld.setData(OzoneDataAttachments.LEVEL, levelData);
+            this.owner.uuid = owner;
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeOwner(pos, owner));
+        }
+    }
+
+    public void changeOwner(Level level, UUID owner) {
+        if (level.isClientSide) {
+            changeOwner(owner);
+        } else {
+            changeOwner((ServerLevel)level, owner);
+        }
+    }
+
+    public void removeOwner() {
+        if (owner != null) {
+            this.owner = null;
+            resetPermissions();
+        }
+    }
+
+    public void removeOwner(ServerLevel level) {
+        removeOwner(level, true);
+    }
+
+    public void removeOwner(ServerLevel level, boolean destroyClaimBlock) {
+        if (owner != null) {
+            if (destroyClaimBlock && level.getBlockState(owner.surveyorTableLocation).getBlock() == OzoneBlocks.SURVEYOR_TABLE.get()) {
+                level.destroyBlock(owner.surveyorTableLocation, true);
+            }
+            var pos = GlobalChunkPos.of(level.dimension(), chunkPos);
+            ServerLevel overworld = level.getServer().overworld();
+            OzoneLevelAttachment levelData = overworld.getData(OzoneDataAttachments.LEVEL);
+            levelData.removePlayerClaim(owner.uuid, pos);
+            overworld.setData(OzoneDataAttachments.LEVEL, levelData);
+            this.owner = null;
+            resetPermissions();
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.Delete(pos));
+        }
+    }
+
+    public void removeOwner(Level level) {
+        if (level.isClientSide) {
+            removeOwner();
+        } else {
+            removeOwner((ServerLevel)level);
         }
     }
 
@@ -131,20 +291,57 @@ public class OzoneChunkAttachment {
         return owner != null;
     }
 
-    public boolean isOwner(UUID uuid) {
-        return Objects.equals(owner, uuid);
+    public boolean isOwner(@Nullable UUID uuid) {
+        var owner = this.owner;
+        return owner == null? uuid == null : owner.uuid.equals(uuid);
+    }
+
+    public boolean isOwner(@Nullable Entity entity) {
+        return isOwner(entity == null? null : entity.getUUID());
     }
 
     public Optional<BlockPos> getSurveyorTableLocation() {
-        return Optional.ofNullable(surveyorTableLocation);
+        return owner == null? Optional.empty() : Optional.of(owner.surveyorTableLocation);
     }
 
-    public void setSurveyorTableLocation(BlockPos surveyorTableLocation) {
-        this.surveyorTableLocation = surveyorTableLocation;
+    public void changeSurveyorTableLocation(BlockPos surveyorTableLocation) {
+        if (owner == null) {
+            throw new IllegalStateException("Cannot change surveyorTableLocation until owner has been set");
+        }
+        if (!chunkPos.equals(new ChunkPos(surveyorTableLocation))) {
+            throw new IllegalArgumentException("desired surveyor table location (" + surveyorTableLocation.getX() + ", " + surveyorTableLocation.getY() + ", " + surveyorTableLocation.getZ() + ") is not within this object's chunk (" + chunkPos.x + ", " + chunkPos.z + ")");
+        }
+        owner.surveyorTableLocation = surveyorTableLocation;
     }
 
-    public boolean hasSurveyorTableLocation() {
-        return surveyorTableLocation != null;
+    public void changeSurveyorTableLocation(ServerLevel level, BlockPos surveyorTableLocation) {
+        var owner = this.owner;
+        if (owner == null) {
+            throw new IllegalStateException("Cannot change surveyorTableLocation until owner has been set");
+        }
+        if (!surveyorTableLocation.equals(owner.surveyorTableLocation)) {
+            if (!this.chunkPos.equals(new ChunkPos(surveyorTableLocation))) {
+                throw new IllegalArgumentException("desired surveyor table location (" + surveyorTableLocation.getX() + ", " + surveyorTableLocation.getY() + ", " + surveyorTableLocation.getZ() + ") is not within this object's chunk (" + chunkPos.x + ", " + chunkPos.z + ")");
+            }
+            if (level.getBlockState(owner.surveyorTableLocation).getBlock() == OzoneBlocks.SURVEYOR_TABLE.get()) {
+                level.destroyBlock(owner.surveyorTableLocation, true);
+            }
+            owner.surveyorTableLocation = surveyorTableLocation;
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeSurveyorTableLocation(GlobalChunkPos.of(level.dimension(), chunkPos), surveyorTableLocation));
+        }
+    }
+
+    public void changeSurveyorTableLocation(Level level, BlockPos surveyorTableLocation) {
+        if (level.isClientSide) {
+            changeSurveyorTableLocation(surveyorTableLocation);
+        } else {
+            changeSurveyorTableLocation((ServerLevel)level, surveyorTableLocation);
+        }
+    }
+
+    public boolean isSurveyorTableLocation(@Nullable BlockPos pos) {
+        var owner = this.owner;
+        return owner == null? pos == null : owner.surveyorTableLocation.equals(pos);
     }
 
     public Filters getFilters() {
@@ -152,7 +349,24 @@ public class OzoneChunkAttachment {
     }
 
     public void setFilters(Filters filters) {
-        this.filters.assignFrom(filters);
+        if (this.filters != filters) {
+            this.filters.assignFrom(filters);
+        }
+    }
+
+    public void setFilters(ServerLevel level, Filters filters) {
+        if (this.filters != filters) {
+            this.filters.assignFrom(filters);
+        }
+        PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeFilters(GlobalChunkPos.of(level.dimension(), chunkPos), this.filters));
+    }
+
+    public void setFilters(Level level, Filters filters) {
+        if (level.isClientSide) {
+            setFilters(filters);
+        } else {
+            setFilters((ServerLevel)level, filters);
+        }
     }
 
     public EntityFilter getAllowExplosions() {
@@ -163,9 +377,24 @@ public class OzoneChunkAttachment {
         filters.setAllowExplosions(allowExplosions);
     }
 
+    public void setAllowExplosions(ServerLevel level, EntityFilter allowExplosions) {
+        if (filters.allowExplosions != allowExplosions) {
+            filters.setAllowExplosions(allowExplosions);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowExplosions, filters.allowExplosions));
+        }
+    }
+
+    public void setAllowExplosions(Level level, EntityFilter allowExplosions) {
+        if (level.isClientSide) {
+            setAllowExplosions(allowExplosions);
+        } else {
+            setAllowExplosions((ServerLevel)level, allowExplosions);
+        }
+    }
+
     public boolean allowExplosions(Entity entity) {
         var owner = this.owner;
-        return owner == null || filters.allowExplosions.test(entity, owner);
+        return owner == null || filters.allowExplosions.test(entity, owner.uuid);
     }
 
     public EntityFilter getAllowPlace() {
@@ -173,12 +402,27 @@ public class OzoneChunkAttachment {
     }
 
     public void setAllowPlace(EntityFilter allowPlace) {
-        filters.setAllowPlace(allowPlace.atLeast(EntityFilter.OWNER_ONLY));
+        filters.setAllowPlace(allowPlace);
+    }
+
+    public void setAllowPlace(ServerLevel level, EntityFilter allowPlace) {
+        if (filters.allowPlace != allowPlace) {
+            filters.setAllowPlace(allowPlace);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowPlace, filters.allowPlace));
+        }
+    }
+
+    public void setAllowPlace(Level level, EntityFilter allowPlace) {
+        if (level.isClientSide) {
+            setAllowPlace(allowPlace);
+        } else {
+            setAllowPlace((ServerLevel)level, allowPlace);
+        }
     }
 
     public boolean allowPlace(@Nullable BlockState state, Entity entity) {
         var owner = this.owner;
-        return owner == null || filters.allowPlace.test(entity, owner) && (state == null || state.getBlock() != OzoneBlocks.SURVEYOR_TABLE.get() || entity.getUUID().equals(owner));
+        return owner == null || filters.allowPlace.test(entity, owner.uuid) && (state == null || state.getBlock() != OzoneBlocks.SURVEYOR_TABLE.get() || entity.getUUID().equals(owner.uuid));
     }
 
     public EntityFilter getAllowBreak() {
@@ -186,12 +430,27 @@ public class OzoneChunkAttachment {
     }
 
     public void setAllowBreak(EntityFilter allowBreak) {
-        filters.setAllowBreak(allowBreak.atLeast(EntityFilter.OWNER_ONLY));
+        filters.setAllowBreak(allowBreak);
+    }
+
+    public void setAllowBreak(ServerLevel level, EntityFilter allowBreak) {
+        if (filters.allowBreak != allowBreak) {
+            filters.setAllowBreak(allowBreak);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowBreak, filters.allowBreak));
+        }
+    }
+
+    public void setAllowBreak(Level level, EntityFilter allowBreak) {
+        if (level.isClientSide) {
+            setAllowBreak(allowBreak);
+        } else {
+            setAllowBreak((ServerLevel)level, allowBreak);
+        }
     }
 
     public boolean allowBreak(@Nullable BlockState state, Entity entity) {
         var owner = this.owner;
-        return owner == null || filters.allowBreak.test(entity, owner) && (state == null || state.getBlock() != OzoneBlocks.SURVEYOR_TABLE.get() || entity.getUUID().equals(owner));
+        return owner == null || filters.allowBreak.test(entity, owner.uuid) && (state == null || state.getBlock() != OzoneBlocks.SURVEYOR_TABLE.get() || entity.getUUID().equals(owner.uuid));
     }
 
     public PlayerFilter getAllowInteractWithContainers() {
@@ -199,17 +458,32 @@ public class OzoneChunkAttachment {
     }
 
     public void setAllowInteractWithContainers(PlayerFilter allowInteractWithContainers) {
-        filters.setAllowInteractWithContainers(allowInteractWithContainers.atLeast(PlayerFilter.OWNER_ONLY));
+        filters.setAllowInteractWithContainers(allowInteractWithContainers);
     }
 
-    public boolean allowInteractWithContainers(Player player) {
+    public void setAllowInteractWithContainers(ServerLevel level, PlayerFilter allowInteractWithContainers) {
+        if (filters.allowInteractWithContainers != allowInteractWithContainers) {
+            filters.setAllowInteractWithContainers(allowInteractWithContainers);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangePlayerFilter(GlobalChunkPos.of(level.dimension(), chunkPos), PlayerFilterField.allowInteractWithContainers, filters.allowInteractWithContainers));
+        }
+    }
+
+    public void setAllowInteractWithContainers(Level level, PlayerFilter allowInteractWithContainers) {
+        if (level.isClientSide) {
+            setAllowInteractWithContainers(allowInteractWithContainers);
+        } else {
+            setAllowInteractWithContainers((ServerLevel)level, allowInteractWithContainers);
+        }
+    }
+
+    public boolean allowInteractWithContainers(@Nullable BlockState state, Player player) {
         var owner = this.owner;
-        return owner == null || filters.allowInteractWithContainers.test(player, owner);
+        return owner == null || filters.allowInteractWithContainers.test(player, owner.uuid) && (state == null || state.getBlock() != OzoneBlocks.SURVEYOR_TABLE.get() || player.getUUID().equals(owner.uuid));
     }
 
     protected boolean allowInteractWithContainers(Entity entity) {
         var owner = this.owner;
-        return owner == null || entity instanceof Player player && filters.allowInteractWithContainers.test(player, owner);
+        return owner == null || entity instanceof Player player && filters.allowInteractWithContainers.test(player, owner.uuid);
     }
 
     public EntityFilter getAllowInteractWithDoors() {
@@ -217,12 +491,27 @@ public class OzoneChunkAttachment {
     }
 
     public void setAllowInteractWithDoors(EntityFilter allowInteractWithDoors) {
-        filters.setAllowInteractWithDoors(allowInteractWithDoors.atLeast(EntityFilter.OWNER_ONLY));
+        filters.setAllowInteractWithDoors(allowInteractWithDoors);
+    }
+
+    public void setAllowInteractWithDoors(ServerLevel level, EntityFilter allowInteractWithDoors) {
+        if (filters.allowInteractWithDoors != allowInteractWithDoors) {
+            filters.setAllowInteractWithDoors(allowInteractWithDoors);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowInteractWithDoors, filters.allowInteractWithDoors));
+        }
+    }
+
+    public void setAllowInteractWithDoors(Level level, EntityFilter allowInteractWithDoors) {
+        if (level.isClientSide) {
+            setAllowInteractWithDoors(allowInteractWithDoors);
+        } else {
+            setAllowInteractWithDoors((ServerLevel)level, allowInteractWithDoors);
+        }
     }
 
     public boolean allowInteractWithDoors(Entity entity) {
         var owner = this.owner;
-        return owner == null || filters.allowInteractWithDoors.test(entity, owner);
+        return owner == null || filters.allowInteractWithDoors.test(entity, owner.uuid);
     }
     
     public PlayerFilter getAllowInteractWithRedstone() {
@@ -230,17 +519,32 @@ public class OzoneChunkAttachment {
     }
 
     public void setAllowInteractWithRedstone(PlayerFilter allowInteractWithRedstone) {
-        filters.setAllowInteractWithRedstone(allowInteractWithRedstone.atLeast(PlayerFilter.OWNER_ONLY));
+        filters.setAllowInteractWithRedstone(allowInteractWithRedstone);
+    }
+
+    public void setAllowInteractWithRedstone(ServerLevel level, PlayerFilter allowInteractWithRedstone) {
+        if (filters.allowInteractWithRedstone != allowInteractWithRedstone) {
+            filters.setAllowInteractWithRedstone(allowInteractWithRedstone);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangePlayerFilter(GlobalChunkPos.of(level.dimension(), chunkPos), PlayerFilterField.allowInteractWithRedstone, filters.allowInteractWithRedstone));
+        }
+    }
+
+    public void setAllowInteractWithRedstone(Level level, PlayerFilter allowInteractWithRedstone) {
+        if (level.isClientSide) {
+            setAllowInteractWithRedstone(allowInteractWithRedstone);
+        } else {
+            setAllowInteractWithRedstone((ServerLevel)level, allowInteractWithRedstone);
+        }
     }
 
     public boolean allowInteractWithRedstone(Player player) {
         var owner = this.owner;
-        return owner == null || filters.allowInteractWithRedstone.test(player, owner);
+        return owner == null || filters.allowInteractWithRedstone.test(player, owner.uuid);
     }
 
     protected boolean allowInteractWithRedstone(Entity entity) {
         var owner = this.owner;
-        return owner == null || entity instanceof Player player && filters.allowInteractWithRedstone.test(player, owner);
+        return owner == null || entity instanceof Player player && filters.allowInteractWithRedstone.test(player, owner.uuid);
     }
 
     public EntityFilter getAllowInteractWithRedstoneActivators() {
@@ -248,12 +552,27 @@ public class OzoneChunkAttachment {
     }
 
     public void setAllowInteractWithRedstoneActivators(EntityFilter allowInteractWithRedstoneActivators) {
-        filters.setAllowInteractWithRedstoneActivators(allowInteractWithRedstoneActivators.atLeast(EntityFilter.OWNER_ONLY));
+        filters.setAllowInteractWithRedstoneActivators(allowInteractWithRedstoneActivators);
+    }
+
+    public void setAllowInteractWithRedstoneActivators(ServerLevel level, EntityFilter allowInteractWithRedstoneActivators) {
+        if (filters.allowInteractWithRedstoneActivators != allowInteractWithRedstoneActivators) {
+            filters.setAllowInteractWithRedstoneActivators(allowInteractWithRedstoneActivators);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowInteractWithRedstoneActivators, filters.allowInteractWithRedstoneActivators));
+        }
+    }
+
+    public void setAllowInteractWithRedstoneActivators(Level level, EntityFilter allowInteractWithRedstoneActivators) {
+        if (level.isClientSide) {
+            setAllowInteractWithRedstoneActivators(allowInteractWithRedstoneActivators);
+        } else {
+            setAllowInteractWithRedstoneActivators((ServerLevel)level, allowInteractWithRedstoneActivators);
+        }
     }
 
     public boolean allowInteractWithRedstoneActivators(Entity entity) {
         var owner = this.owner;
-        return owner == null || filters.allowInteractWithRedstoneActivators.test(entity, owner);
+        return owner == null || filters.allowInteractWithRedstoneActivators.test(entity, owner.uuid);
     }
 
     public PlayerFilter getAllowInteractWithSigns() {
@@ -261,17 +580,32 @@ public class OzoneChunkAttachment {
     }
 
     public void setAllowInteractWithSigns(PlayerFilter allowInteractWithSigns) {
-        filters.setAllowInteractWithSigns(allowInteractWithSigns.atLeast(PlayerFilter.OWNER_ONLY));
+        filters.setAllowInteractWithSigns(allowInteractWithSigns);
+    }
+
+    public void setAllowInteractWithSigns(ServerLevel level, PlayerFilter allowInteractWithSigns) {
+        if (filters.allowInteractWithSigns != allowInteractWithSigns) {
+            filters.setAllowInteractWithSigns(allowInteractWithSigns);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangePlayerFilter(GlobalChunkPos.of(level.dimension(), chunkPos), PlayerFilterField.allowInteractWithSigns, filters.allowInteractWithSigns));
+        }
+    }
+
+    public void setAllowInteractWithSigns(Level level, PlayerFilter allowInteractWithSigns) {
+        if (level.isClientSide) {
+            setAllowInteractWithSigns(allowInteractWithSigns);
+        } else {
+            setAllowInteractWithSigns((ServerLevel)level, allowInteractWithSigns);
+        }
     }
 
     public boolean allowInteractWithSigns(Player player) {
         var owner = this.owner;
-        return owner == null || filters.allowInteractWithSigns.test(player, owner);
+        return owner == null || filters.allowInteractWithSigns.test(player, owner.uuid);
     }
 
     protected boolean allowInteractWithSigns(Entity entity) {
         var owner = this.owner;
-        return owner == null || entity instanceof Player player && filters.allowInteractWithSigns.test(player, owner);
+        return owner == null || entity instanceof Player player && filters.allowInteractWithSigns.test(player, owner.uuid);
     }
 
     public EntityFilter getAllowInteractWithOther() {
@@ -279,12 +613,27 @@ public class OzoneChunkAttachment {
     }
 
     public void setAllowInteractWithOther(EntityFilter allowInteractWithOther) {
-        filters.setAllowInteractWithOther(allowInteractWithOther.atLeast(EntityFilter.OWNER_ONLY));
+        filters.setAllowInteractWithOther(allowInteractWithOther);
+    }
+
+    public void setAllowInteractWithOther(ServerLevel level, EntityFilter allowInteractWithOther) {
+        if (filters.allowInteractWithOther != allowInteractWithOther) {
+            filters.setAllowInteractWithOther(allowInteractWithOther);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowInteractWithOther, filters.allowInteractWithOther));
+        }
+    }
+
+    public void setAllowInteractWithOther(Level level, EntityFilter allowInteractWithOther) {
+        if (level.isClientSide) {
+            setAllowInteractWithOther(allowInteractWithOther);
+        } else {
+            setAllowInteractWithOther((ServerLevel)level, allowInteractWithOther);
+        }
     }
 
     public boolean allowInteractWithOther(Entity entity) {
         var owner = this.owner;
-        return owner == null || filters.allowInteractWithOther.test(entity, owner);
+        return owner == null || filters.allowInteractWithOther.test(entity, owner.uuid);
     }
 
     public EntityFilter getAllowDrop() {
@@ -292,12 +641,27 @@ public class OzoneChunkAttachment {
     }
 
     public void setAllowDrop(EntityFilter allowDrop) {
-        filters.setAllowDrop(allowDrop.atLeast(EntityFilter.OWNER_ONLY));
+        filters.setAllowDrop(allowDrop);
+    }
+
+    public void setAllowDrop(ServerLevel level, EntityFilter allowDrop) {
+        if (filters.allowDrop != allowDrop) {
+            filters.setAllowDrop(allowDrop);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowDrop, filters.allowDrop));
+        }
+    }
+
+    public void setAllowDrop(Level level, EntityFilter allowDrop) {
+        if (level.isClientSide) {
+            setAllowDrop(allowDrop);
+        } else {
+            setAllowDrop((ServerLevel)level, allowDrop);
+        }
     }
 
     public boolean allowDrop(Entity entity) {
         var owner = this.owner;
-        return owner == null || filters.allowDrop.test(entity, owner);
+        return owner == null || filters.allowDrop.test(entity, owner.uuid);
     }
 
     private static String cleanName(String string) {
@@ -772,6 +1136,57 @@ public class OzoneChunkAttachment {
     
         public BiConsumer<OzoneChunkAttachment, EntityFilter> getSetter() {
             return setter;
+        }
+    }
+
+    public static final class OwnerInfo {
+        private UUID uuid;
+        private BlockPos surveyorTableLocation;
+
+        public static final Codec<OwnerInfo> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+            UUIDUtil.CODEC.fieldOf("uuid").forGetter(OwnerInfo::getUUID),
+            BlockPos.CODEC.fieldOf("surveyorTableLocation").forGetter(OwnerInfo::getSurveyorTableLocation)
+        ).apply(instance, OwnerInfo::new));
+        public static final StreamCodec<RegistryFriendlyByteBuf, OwnerInfo> STREAM_CODEC = StreamCodec.composite(
+            UUIDUtil.STREAM_CODEC, OwnerInfo::getUUID,
+            BlockPos.STREAM_CODEC, OwnerInfo::getSurveyorTableLocation,
+            OwnerInfo::new
+        );
+
+        public OwnerInfo(UUID uuid, BlockPos surveyorTableLocation) {
+            this.uuid = Validate.notNull(uuid, "uuid was null");
+            this.surveyorTableLocation = Validate.notNull(surveyorTableLocation, "surveyorTableLocation was null");
+        }
+
+        public UUID getUUID() {
+            return uuid;
+        }
+
+        public void setUUID(UUID uuid) {
+            this.uuid = Validate.notNull(uuid, "uuid was null");
+        }
+
+        public BlockPos getSurveyorTableLocation() {
+            return surveyorTableLocation;
+        }
+
+        public void setSurveyorTableLocation(BlockPos surveyorTableLocation) {
+            this.surveyorTableLocation = Validate.notNull(surveyorTableLocation, "surveyorTableLocation was null");
+        }
+
+        @Override
+        public int hashCode() {
+            return 31 * uuid.hashCode() + surveyorTableLocation.hashCode();
+        }
+
+        @Override
+        public String toString() {
+            return "OwnerInfo[uuid=" + uuid + ", surveyorTableLocation=" + surveyorTableLocation + "]";
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return this == obj || obj instanceof OwnerInfo other && this.uuid.equals(other.uuid) && this.surveyorTableLocation.equals(other.surveyorTableLocation);
         }
     }
 }

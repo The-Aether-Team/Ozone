@@ -1,21 +1,32 @@
 package com.aetherteam.ozone.attachment;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
+import javax.annotation.Nullable;
+
 import com.aetherteam.ozone.network.packet.clientbound.HomeSuggestionPacket;
 import com.aetherteam.ozone.network.packet.clientbound.WarpSuggestionPacket;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+
 import net.minecraft.core.GlobalPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-import java.util.*;
-
 public class OzonePlayerAttachment {
-    private Optional<GlobalPos> previousPosition;
-    private Map<String, GlobalPos> homes;
-    private List<String> homeCommandSuggestions;
+    @Nullable
+    private GlobalPos previousPosition;
+    private final HashMap<String, GlobalPos> homes;
+    private final ArrayList<String> homeCommandSuggestions;
 
     public static final Codec<OzonePlayerAttachment> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             GlobalPos.CODEC.optionalFieldOf("previous_position").forGetter(OzonePlayerAttachment::getPreviousPosition),
@@ -25,13 +36,13 @@ public class OzonePlayerAttachment {
     private boolean shouldSyncAfterJoin;
 
     public OzonePlayerAttachment() {
-        this.previousPosition = Optional.empty();
+        this.previousPosition = null;
         this.homes = new HashMap<>();
         this.homeCommandSuggestions = new ArrayList<>();
     }
 
     public OzonePlayerAttachment(Optional<GlobalPos> previousPosition, Map<String, GlobalPos> homes) {
-        this.previousPosition = previousPosition;
+        this.previousPosition = previousPosition.orElse(null);
         this.homes = new HashMap<>(homes);
         this.homeCommandSuggestions = new ArrayList<>(this.homes.keySet().stream().toList());
     }
@@ -53,7 +64,7 @@ public class OzonePlayerAttachment {
             if (player instanceof ServerPlayer serverPlayer) {
                 PacketDistributor.sendToPlayer(serverPlayer, new HomeSuggestionPacket(this.homeCommandSuggestions));
                 if (serverPlayer.getServer() != null) {
-                    ServerLevel overworld = OzoneLevelAttachment.getOverworld(serverPlayer.getServer());
+                    ServerLevel overworld = serverPlayer.getServer().overworld();
                     if (overworld != null) {
                         PacketDistributor.sendToPlayer(serverPlayer, new WarpSuggestionPacket(overworld.getData(OzoneDataAttachments.LEVEL).getWarpCommandSuggestions()));
                     }
@@ -65,25 +76,29 @@ public class OzonePlayerAttachment {
     }
 
     public Optional<GlobalPos> getPreviousPosition() {
-        return this.previousPosition;
+        return Optional.ofNullable(previousPosition);
     }
 
     public void setPreviousPosition(GlobalPos previousPosition) {
-        this.previousPosition = Optional.of(previousPosition);
+        this.previousPosition = previousPosition;
     }
 
     public void clearPreviousPosition() {
-        this.previousPosition = Optional.empty();
+        this.previousPosition = null;
     }
 
     public Map<String, GlobalPos> getHomes() {
         return this.homes;
     }
 
-    public void setHomes(ServerPlayer serverPlayer, Map<String, GlobalPos> warps) {
-        this.homes = warps;
-        this.homeCommandSuggestions = warps.keySet().stream().toList();
-        PacketDistributor.sendToPlayer(serverPlayer, new HomeSuggestionPacket(this.homeCommandSuggestions));
+    public void setHomes(ServerPlayer serverPlayer, Map<String, GlobalPos> homes) {
+        if (this.homes != homes) {
+            this.homes.clear();
+            this.homes.putAll(homes);
+            this.homeCommandSuggestions.clear();
+            this.homeCommandSuggestions.addAll(this.homes.keySet());
+            PacketDistributor.sendToPlayer(serverPlayer, new HomeSuggestionPacket(this.homeCommandSuggestions));
+        }
     }
 
     public void addHome(ServerPlayer serverPlayer, String title, GlobalPos warp) {
@@ -103,6 +118,9 @@ public class OzonePlayerAttachment {
     }
 
     public void setHomeCommandSuggestions(List<String> homeCommandSuggestions) {
-        this.homeCommandSuggestions = homeCommandSuggestions;
+        if (this.homeCommandSuggestions != homeCommandSuggestions) {
+            this.homeCommandSuggestions.clear();
+            this.homeCommandSuggestions.addAll(homeCommandSuggestions);
+        }
     }
 }

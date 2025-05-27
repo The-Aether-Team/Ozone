@@ -32,7 +32,7 @@ public class SpawnCommand {
 
     private static int teleportToSpawn(CommandSourceStack source) throws CommandSyntaxException {
         if (source.getEntityOrException() instanceof ServerPlayer sender) {
-            ServerLevel overworld = OzoneLevelAttachment.getOverworld(source.getServer());
+            ServerLevel overworld = source.getServer().overworld();
             if (overworld != null) {
                 Optional<GlobalPos> pos = overworld.getData(OzoneDataAttachments.LEVEL).getServerSpawn();
                 if (pos.isPresent()) {
@@ -52,7 +52,7 @@ public class SpawnCommand {
 
     private static int setSpawn(CommandSourceStack source) throws CommandSyntaxException {
         if (source.getEntityOrException() instanceof ServerPlayer sender) {
-            ServerLevel overworld = OzoneLevelAttachment.getOverworld(source.getServer());
+            ServerLevel overworld = source.getServer().overworld();
             if (overworld != null) {
                 ResourceKey<Level> dimension = sender.level().dimension();
                 BlockPos pos = OzoneCommands.getCorrectPosition(sender);
@@ -66,7 +66,7 @@ public class SpawnCommand {
 
     private static int deleteSpawn(CommandSourceStack source) throws CommandSyntaxException {
         if (source.getEntityOrException() instanceof ServerPlayer sender) {
-            ServerLevel overworld = OzoneLevelAttachment.getOverworld(source.getServer());
+            ServerLevel overworld = source.getServer().overworld();
             if (overworld != null) {
                 Optional<GlobalPos> pos = overworld.getData(OzoneDataAttachments.LEVEL).getServerSpawn();
                 if (pos.isPresent()) {
