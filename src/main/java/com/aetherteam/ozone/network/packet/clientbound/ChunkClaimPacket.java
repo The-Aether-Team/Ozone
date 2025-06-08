@@ -7,11 +7,14 @@ import javax.annotation.Nullable;
 import com.aetherteam.ozone.Ozone;
 import com.aetherteam.ozone.attachment.GlobalChunkPos;
 import com.aetherteam.ozone.attachment.OzoneChunkAttachment;
-import com.aetherteam.ozone.attachment.OzoneChunkAttachment.EntityFilter;
-import com.aetherteam.ozone.attachment.OzoneChunkAttachment.Filters;
-import com.aetherteam.ozone.attachment.OzoneChunkAttachment.PlayerFilter;
 import com.aetherteam.ozone.attachment.OzoneDataAttachments;
 import com.aetherteam.ozone.attachment.OzoneLevelAttachment;
+import com.aetherteam.ozone.claims.EntityFilter;
+import com.aetherteam.ozone.claims.EntityFilterField;
+import com.aetherteam.ozone.claims.Filters;
+import com.aetherteam.ozone.claims.IFilters;
+import com.aetherteam.ozone.claims.PlayerFilter;
+import com.aetherteam.ozone.claims.PlayerFilterField;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -227,13 +230,13 @@ public sealed interface ChunkClaimPacket extends CustomPacketPayload {
         }
     }
 
-    public record ChangePlayerFilter(GlobalChunkPos pos, OzoneChunkAttachment.PlayerFilterField field, PlayerFilter newFilter) implements ChunkClaimPacket {
+    public record ChangePlayerFilter(GlobalChunkPos pos, PlayerFilterField field, PlayerFilter newFilter) implements ChunkClaimPacket {
         public static final Type<ChangePlayerFilter> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Ozone.MODID, "claim_change_player_filter"));
 
         public static final StreamCodec<RegistryFriendlyByteBuf, ChangePlayerFilter> STREAM_CODEC = StreamCodec.composite(
             GlobalChunkPos.STREAM_CODEC,
             ChangePlayerFilter::pos,
-            OzoneChunkAttachment.PlayerFilterField.STREAM_CODEC,
+            PlayerFilterField.STREAM_CODEC,
             ChangePlayerFilter::field,
             PlayerFilter.STREAM_CODEC,
             ChangePlayerFilter::newFilter,
@@ -264,13 +267,13 @@ public sealed interface ChunkClaimPacket extends CustomPacketPayload {
         }
     }
 
-    public record ChangeEntityFilter(GlobalChunkPos pos, OzoneChunkAttachment.EntityFilterField field, EntityFilter newFilter) implements ChunkClaimPacket {
+    public record ChangeEntityFilter(GlobalChunkPos pos, EntityFilterField field, EntityFilter newFilter) implements ChunkClaimPacket {
         public static final Type<ChangeEntityFilter> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Ozone.MODID, "claim_change_entity_filter"));
 
         public static final StreamCodec<RegistryFriendlyByteBuf, ChangeEntityFilter> STREAM_CODEC = StreamCodec.composite(
             GlobalChunkPos.STREAM_CODEC,
             ChangeEntityFilter::pos,
-            OzoneChunkAttachment.EntityFilterField.STREAM_CODEC,
+            EntityFilterField.STREAM_CODEC,
             ChangeEntityFilter::field,
             EntityFilter.STREAM_CODEC,
             ChangeEntityFilter::newFilter,

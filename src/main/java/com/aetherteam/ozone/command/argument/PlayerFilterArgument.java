@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
-import com.aetherteam.ozone.attachment.OzoneChunkAttachment.PlayerFilter;
+import com.aetherteam.ozone.claims.PlayerFilter;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.context.CommandContext;

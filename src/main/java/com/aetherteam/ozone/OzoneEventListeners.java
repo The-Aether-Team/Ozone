@@ -4,7 +4,7 @@ import java.util.UUID;
 
 import com.aetherteam.ozone.attachment.GlobalChunkPos;
 import com.aetherteam.ozone.attachment.OzoneChunkAttachment;
-import com.aetherteam.ozone.attachment.OzoneChunkAttachment.BlockCategory;
+import com.aetherteam.ozone.attachment.OzoneChunkAttachment.BlockInteractionCategory;
 import com.aetherteam.ozone.attachment.OzoneDataAttachments;
 import com.aetherteam.ozone.attachment.OzoneLevelAttachment;
 import com.aetherteam.ozone.block.OzoneBlocks;
@@ -147,10 +147,10 @@ public class OzoneEventListeners {
                 }
                 return;
             }
-            var categories = BlockCategory.of(event.getLevel().getBlockState(event.getPos()));
+            var categories = BlockInteractionCategory.of(state);
             if (!categories.isEmpty()) {                
                 for (var category : categories) {
-                    if (!(category == BlockCategory.CONTAINERS? claim.allowInteractWithContainers(state, event.getEntity()) : category.isInteractAllowed(event.getEntity(), claim))) {
+                    if (!category.isInteractAllowed(state, event.getEntity(), claim)) {
                         if (!event.getLevel().isClientSide) {
                             event.setCancellationResult(InteractionResult.PASS);
                             event.setCanceled(true);

@@ -10,6 +10,10 @@ import com.aetherteam.ozone.attachment.GlobalChunkPos;
 import com.aetherteam.ozone.attachment.OzoneChunkAttachment;
 import com.aetherteam.ozone.attachment.OzoneDataAttachments;
 import com.aetherteam.ozone.attachment.OzoneLevelAttachment;
+import com.aetherteam.ozone.claims.EntityFilterField;
+import com.aetherteam.ozone.claims.IFilter;
+import com.aetherteam.ozone.claims.IFilterField;
+import com.aetherteam.ozone.claims.PlayerFilterField;
 import com.aetherteam.ozone.command.argument.EntityFilterArgument;
 import com.aetherteam.ozone.command.argument.PlayerFilterArgument;
 import com.aetherteam.ozone.command.argument.SingleGameProfileArgument;
@@ -138,7 +142,7 @@ public class ClaimCommand {
     }
 
     private static <B extends ArgumentBuilder<CommandSourceStack, ?>> B addFilters(B builder) {
-        for (final var field : OzoneChunkAttachment.PlayerFilterField.values()) {
+        for (final var field : PlayerFilterField.values()) {
             builder.then(
                 Commands.literal(field.name())
                     .then(
@@ -155,7 +159,7 @@ public class ClaimCommand {
                     )
             );
         }
-        for (final var field : OzoneChunkAttachment.EntityFilterField.values()) {
+        for (final var field : EntityFilterField.values()) {
             builder.then(
                 Commands.literal(field.name())
                     .then(
@@ -175,7 +179,7 @@ public class ClaimCommand {
         return builder;
     }
 
-    public static <F extends BiConsumer<? super OzoneChunkAttachment, ? super T>, T> int setFilter(CommandSourceStack source, BlockPos pos, F field, T filter, TriFunction<? super GlobalChunkPos, ? super F, ? super T, ? extends ChunkClaimPacket> packetCreator) throws CommandSyntaxException {
+    public static <Field extends IFilterField<?, Filter>, Filter extends Enum<Filter> & IFilter<Filter>> int setFilter(CommandSourceStack source, BlockPos pos, Field field, Filter filter, TriFunction<? super GlobalChunkPos, ? super Field, ? super Filter, ? extends ChunkClaimPacket> packetCreator) throws CommandSyntaxException {
         ServerLevel level = source.getLevel();
         if (!level.isAreaLoaded(pos, 0)) {
             throw BlockPosArgument.ERROR_NOT_LOADED.create();
@@ -192,7 +196,7 @@ public class ClaimCommand {
             throw ERROR_NO_CLAIM.create();
         }
 
-        field.accept(claim, filter);
+        field.set(claim, filter);
         PacketDistributor.sendToPlayersTrackingChunk(level, chunk.getPos(), packetCreator.apply(GlobalChunkPos.of(level.dimension(), chunk.getPos()), field, filter));
         chunk.setData(OzoneDataAttachments.CHUNK, claim);
         
@@ -266,7 +270,7 @@ public class ClaimCommand {
             false
         );
         source.sendSuccess(
-            () -> Component.translatable("commands.ozone_utilities.claim.info.allowInteractWithRedstoneActivators", Component.translationArg(claim.getAllowInteractWithRedstoneActivators().getDescription())).withStyle(ChatFormatting.LIGHT_PURPLE),
+            () -> Component.translatable("commands.ozone_utilities.claim.info.allowInteractWithRedstoneActivators", Component.translationArg(claim.getAllowConfiguration().getDescription())).withStyle(ChatFormatting.LIGHT_PURPLE),
             false
         );
         source.sendSuccess(

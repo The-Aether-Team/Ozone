@@ -1,26 +1,27 @@
 package com.aetherteam.ozone.attachment;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.EnumSet;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.Validate;
 
 import com.aetherteam.ozone.block.OzoneBlocks;
+import com.aetherteam.ozone.claims.EntityFilter;
+import com.aetherteam.ozone.claims.EntityFilterField;
+import com.aetherteam.ozone.claims.Filters;
+import com.aetherteam.ozone.claims.IFilters;
+import com.aetherteam.ozone.claims.PlayerFilter;
+import com.aetherteam.ozone.claims.PlayerFilterField;
 import com.aetherteam.ozone.network.packet.clientbound.ChunkClaimPacket;
 import com.aetherteam.ozone.tags.OzoneBlockTags;
+import com.aetherteam.ozone.tags.OzoneEntityTypeTags;
 import com.mojang.authlib.GameProfile;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -35,8 +36,15 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
-import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.NeutralMob;
+import net.minecraft.world.entity.OwnableEntity;
+import net.minecraft.world.entity.TamableAnimal;
+import net.minecraft.world.entity.animal.Animal;
+import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -44,9 +52,10 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.SkullBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.common.util.TriPredicate;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-public class OzoneChunkAttachment {
+public class OzoneChunkAttachment implements IFilters {
     public final ChunkPos chunkPos;
     @Nullable
     private OwnerInfo owner;
@@ -369,18 +378,20 @@ public class OzoneChunkAttachment {
         }
     }
 
+    @Override
     public EntityFilter getAllowExplosions() {
-        return filters.allowExplosions;
+        return filters.getAllowExplosions();
     }
 
+    @Override
     public void setAllowExplosions(EntityFilter allowExplosions) {
         filters.setAllowExplosions(allowExplosions);
     }
 
     public void setAllowExplosions(ServerLevel level, EntityFilter allowExplosions) {
-        if (filters.allowExplosions != allowExplosions) {
+        if (filters.getAllowExplosions() != allowExplosions) {
             filters.setAllowExplosions(allowExplosions);
-            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowExplosions, filters.allowExplosions));
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowExplosions, filters.getAllowExplosions()));
         }
     }
 
@@ -394,21 +405,23 @@ public class OzoneChunkAttachment {
 
     public boolean allowExplosions(Entity entity) {
         var owner = this.owner;
-        return owner == null || filters.allowExplosions.test(entity, owner.uuid);
+        return owner == null || filters.getAllowExplosions().test(entity, owner.uuid);
     }
 
+    @Override
     public EntityFilter getAllowPlace() {
-        return filters.allowPlace;
+        return filters.getAllowPlace();
     }
 
+    @Override
     public void setAllowPlace(EntityFilter allowPlace) {
         filters.setAllowPlace(allowPlace);
     }
 
     public void setAllowPlace(ServerLevel level, EntityFilter allowPlace) {
-        if (filters.allowPlace != allowPlace) {
+        if (filters.getAllowPlace() != allowPlace) {
             filters.setAllowPlace(allowPlace);
-            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowPlace, filters.allowPlace));
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowPlace, filters.getAllowPlace()));
         }
     }
 
@@ -422,21 +435,23 @@ public class OzoneChunkAttachment {
 
     public boolean allowPlace(@Nullable BlockState state, Entity entity) {
         var owner = this.owner;
-        return owner == null || filters.allowPlace.test(entity, owner.uuid) && (state == null || state.getBlock() != OzoneBlocks.SURVEYOR_TABLE.get() || entity.getUUID().equals(owner.uuid));
+        return owner == null || filters.getAllowPlace().test(entity, owner.uuid) && (state == null || state.getBlock() != OzoneBlocks.SURVEYOR_TABLE.get() || entity.getUUID().equals(owner.uuid));
     }
 
+    @Override
     public EntityFilter getAllowBreak() {
-        return filters.allowBreak;
+        return filters.getAllowBreak();
     }
 
+    @Override
     public void setAllowBreak(EntityFilter allowBreak) {
         filters.setAllowBreak(allowBreak);
     }
 
     public void setAllowBreak(ServerLevel level, EntityFilter allowBreak) {
-        if (filters.allowBreak != allowBreak) {
+        if (filters.getAllowBreak() != allowBreak) {
             filters.setAllowBreak(allowBreak);
-            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowBreak, filters.allowBreak));
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowBreak, filters.getAllowBreak()));
         }
     }
 
@@ -450,21 +465,23 @@ public class OzoneChunkAttachment {
 
     public boolean allowBreak(@Nullable BlockState state, Entity entity) {
         var owner = this.owner;
-        return owner == null || filters.allowBreak.test(entity, owner.uuid) && (state == null || state.getBlock() != OzoneBlocks.SURVEYOR_TABLE.get() || entity.getUUID().equals(owner.uuid));
+        return owner == null || filters.getAllowBreak().test(entity, owner.uuid) && (state == null || state.getBlock() != OzoneBlocks.SURVEYOR_TABLE.get() || entity.getUUID().equals(owner.uuid));
     }
 
+    @Override
     public PlayerFilter getAllowInteractWithContainers() {
-        return filters.allowInteractWithContainers;
+        return filters.getAllowInteractWithContainers();
     }
 
+    @Override
     public void setAllowInteractWithContainers(PlayerFilter allowInteractWithContainers) {
         filters.setAllowInteractWithContainers(allowInteractWithContainers);
     }
 
     public void setAllowInteractWithContainers(ServerLevel level, PlayerFilter allowInteractWithContainers) {
-        if (filters.allowInteractWithContainers != allowInteractWithContainers) {
+        if (filters.getAllowInteractWithContainers() != allowInteractWithContainers) {
             filters.setAllowInteractWithContainers(allowInteractWithContainers);
-            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangePlayerFilter(GlobalChunkPos.of(level.dimension(), chunkPos), PlayerFilterField.allowInteractWithContainers, filters.allowInteractWithContainers));
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangePlayerFilter(GlobalChunkPos.of(level.dimension(), chunkPos), PlayerFilterField.allowInteractWithContainers, filters.getAllowInteractWithContainers()));
         }
     }
 
@@ -478,26 +495,23 @@ public class OzoneChunkAttachment {
 
     public boolean allowInteractWithContainers(@Nullable BlockState state, Player player) {
         var owner = this.owner;
-        return owner == null || filters.allowInteractWithContainers.test(player, owner.uuid) && (state == null || state.getBlock() != OzoneBlocks.SURVEYOR_TABLE.get() || player.getUUID().equals(owner.uuid));
+        return owner == null || filters.getAllowInteractWithContainers().test(player, owner.uuid) && (state == null || state.getBlock() != OzoneBlocks.SURVEYOR_TABLE.get() || player.getUUID().equals(owner.uuid));
     }
 
-    protected boolean allowInteractWithContainers(Entity entity) {
-        var owner = this.owner;
-        return owner == null || entity instanceof Player player && filters.allowInteractWithContainers.test(player, owner.uuid);
-    }
-
+    @Override
     public EntityFilter getAllowInteractWithDoors() {
-        return filters.allowInteractWithDoors;
+        return filters.getAllowInteractWithDoors();
     }
 
+    @Override
     public void setAllowInteractWithDoors(EntityFilter allowInteractWithDoors) {
         filters.setAllowInteractWithDoors(allowInteractWithDoors);
     }
 
     public void setAllowInteractWithDoors(ServerLevel level, EntityFilter allowInteractWithDoors) {
-        if (filters.allowInteractWithDoors != allowInteractWithDoors) {
+        if (filters.getAllowInteractWithDoors() != allowInteractWithDoors) {
             filters.setAllowInteractWithDoors(allowInteractWithDoors);
-            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowInteractWithDoors, filters.allowInteractWithDoors));
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowInteractWithDoors, filters.getAllowInteractWithDoors()));
         }
     }
 
@@ -511,25 +525,27 @@ public class OzoneChunkAttachment {
 
     public boolean allowInteractWithDoors(Entity entity) {
         var owner = this.owner;
-        return owner == null || filters.allowInteractWithDoors.test(entity, owner.uuid);
+        return owner == null || filters.getAllowInteractWithDoors().test(entity, owner.uuid);
     }
     
-    public PlayerFilter getAllowInteractWithRedstone() {
-        return filters.allowInteractWithRedstone;
+    @Override
+    public EntityFilter getAllowInteractWithRedstone() {
+        return filters.getAllowInteractWithRedstone();
     }
 
-    public void setAllowInteractWithRedstone(PlayerFilter allowInteractWithRedstone) {
+    @Override
+    public void setAllowInteractWithRedstone(EntityFilter allowInteractWithRedstone) {
         filters.setAllowInteractWithRedstone(allowInteractWithRedstone);
     }
 
-    public void setAllowInteractWithRedstone(ServerLevel level, PlayerFilter allowInteractWithRedstone) {
-        if (filters.allowInteractWithRedstone != allowInteractWithRedstone) {
+    public void setAllowInteractWithRedstone(ServerLevel level, EntityFilter allowInteractWithRedstone) {
+        if (filters.getAllowInteractWithRedstone() != allowInteractWithRedstone) {
             filters.setAllowInteractWithRedstone(allowInteractWithRedstone);
-            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangePlayerFilter(GlobalChunkPos.of(level.dimension(), chunkPos), PlayerFilterField.allowInteractWithRedstone, filters.allowInteractWithRedstone));
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowInteractWithRedstone, filters.getAllowInteractWithRedstone()));
         }
     }
 
-    public void setAllowInteractWithRedstone(Level level, PlayerFilter allowInteractWithRedstone) {
+    public void setAllowInteractWithRedstone(Level level, EntityFilter allowInteractWithRedstone) {
         if (level.isClientSide) {
             setAllowInteractWithRedstone(allowInteractWithRedstone);
         } else {
@@ -537,56 +553,55 @@ public class OzoneChunkAttachment {
         }
     }
 
-    public boolean allowInteractWithRedstone(Player player) {
+    public boolean allowInteractWithRedstone(Entity entity) {
         var owner = this.owner;
-        return owner == null || filters.allowInteractWithRedstone.test(player, owner.uuid);
+        return owner == null || filters.getAllowInteractWithRedstone().test(entity, owner.uuid);
     }
 
-    protected boolean allowInteractWithRedstone(Entity entity) {
-        var owner = this.owner;
-        return owner == null || entity instanceof Player player && filters.allowInteractWithRedstone.test(player, owner.uuid);
+    @Override
+    public EntityFilter getAllowConfiguration() {
+        return filters.getAllowConfiguration();
     }
 
-    public EntityFilter getAllowInteractWithRedstoneActivators() {
-        return filters.allowInteractWithRedstoneActivators;
+    @Override
+    public void setAllowConfiguration(EntityFilter allowInteractWithRedstoneActivators) {
+        filters.setAllowConfiguration(allowInteractWithRedstoneActivators);
     }
 
-    public void setAllowInteractWithRedstoneActivators(EntityFilter allowInteractWithRedstoneActivators) {
-        filters.setAllowInteractWithRedstoneActivators(allowInteractWithRedstoneActivators);
-    }
-
-    public void setAllowInteractWithRedstoneActivators(ServerLevel level, EntityFilter allowInteractWithRedstoneActivators) {
-        if (filters.allowInteractWithRedstoneActivators != allowInteractWithRedstoneActivators) {
-            filters.setAllowInteractWithRedstoneActivators(allowInteractWithRedstoneActivators);
-            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowInteractWithRedstoneActivators, filters.allowInteractWithRedstoneActivators));
+    public void setAllowConfiguration(ServerLevel level, EntityFilter allowInteractWithRedstoneActivators) {
+        if (filters.getAllowConfiguration() != allowInteractWithRedstoneActivators) {
+            filters.setAllowConfiguration(allowInteractWithRedstoneActivators);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowConfiguration, filters.getAllowConfiguration()));
         }
     }
 
-    public void setAllowInteractWithRedstoneActivators(Level level, EntityFilter allowInteractWithRedstoneActivators) {
+    public void setAllowConfiguration(Level level, EntityFilter allowInteractWithRedstoneActivators) {
         if (level.isClientSide) {
-            setAllowInteractWithRedstoneActivators(allowInteractWithRedstoneActivators);
+            setAllowConfiguration(allowInteractWithRedstoneActivators);
         } else {
-            setAllowInteractWithRedstoneActivators((ServerLevel)level, allowInteractWithRedstoneActivators);
+            setAllowConfiguration((ServerLevel)level, allowInteractWithRedstoneActivators);
         }
     }
 
-    public boolean allowInteractWithRedstoneActivators(Entity entity) {
+    public boolean allowConfiguration(Entity entity) {
         var owner = this.owner;
-        return owner == null || filters.allowInteractWithRedstoneActivators.test(entity, owner.uuid);
+        return owner == null || filters.getAllowConfiguration().test(entity, owner.uuid);
     }
 
+    @Override
     public PlayerFilter getAllowInteractWithSigns() {
-        return filters.allowInteractWithSigns;
+        return filters.getAllowInteractWithSigns();
     }
 
+    @Override
     public void setAllowInteractWithSigns(PlayerFilter allowInteractWithSigns) {
         filters.setAllowInteractWithSigns(allowInteractWithSigns);
     }
 
     public void setAllowInteractWithSigns(ServerLevel level, PlayerFilter allowInteractWithSigns) {
-        if (filters.allowInteractWithSigns != allowInteractWithSigns) {
+        if (filters.getAllowInteractWithSigns() != allowInteractWithSigns) {
             filters.setAllowInteractWithSigns(allowInteractWithSigns);
-            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangePlayerFilter(GlobalChunkPos.of(level.dimension(), chunkPos), PlayerFilterField.allowInteractWithSigns, filters.allowInteractWithSigns));
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangePlayerFilter(GlobalChunkPos.of(level.dimension(), chunkPos), PlayerFilterField.allowInteractWithSigns, filters.getAllowInteractWithSigns()));
         }
     }
 
@@ -600,26 +615,23 @@ public class OzoneChunkAttachment {
 
     public boolean allowInteractWithSigns(Player player) {
         var owner = this.owner;
-        return owner == null || filters.allowInteractWithSigns.test(player, owner.uuid);
+        return owner == null || filters.getAllowInteractWithSigns().test(player, owner.uuid);
     }
 
-    protected boolean allowInteractWithSigns(Entity entity) {
-        var owner = this.owner;
-        return owner == null || entity instanceof Player player && filters.allowInteractWithSigns.test(player, owner.uuid);
-    }
-
+    @Override
     public EntityFilter getAllowInteractWithOther() {
-        return filters.allowInteractWithOther;
+        return filters.getAllowInteractWithOther();
     }
 
+    @Override
     public void setAllowInteractWithOther(EntityFilter allowInteractWithOther) {
         filters.setAllowInteractWithOther(allowInteractWithOther);
     }
 
     public void setAllowInteractWithOther(ServerLevel level, EntityFilter allowInteractWithOther) {
-        if (filters.allowInteractWithOther != allowInteractWithOther) {
+        if (filters.getAllowInteractWithOther() != allowInteractWithOther) {
             filters.setAllowInteractWithOther(allowInteractWithOther);
-            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowInteractWithOther, filters.allowInteractWithOther));
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowInteractWithOther, filters.getAllowInteractWithOther()));
         }
     }
 
@@ -633,21 +645,23 @@ public class OzoneChunkAttachment {
 
     public boolean allowInteractWithOther(Entity entity) {
         var owner = this.owner;
-        return owner == null || filters.allowInteractWithOther.test(entity, owner.uuid);
+        return owner == null || filters.getAllowInteractWithOther().test(entity, owner.uuid);
     }
 
+    @Override
     public EntityFilter getAllowDrop() {
-        return filters.allowDrop;
+        return filters.getAllowDrop();
     }
 
+    @Override
     public void setAllowDrop(EntityFilter allowDrop) {
         filters.setAllowDrop(allowDrop);
     }
 
     public void setAllowDrop(ServerLevel level, EntityFilter allowDrop) {
-        if (filters.allowDrop != allowDrop) {
+        if (filters.getAllowDrop() != allowDrop) {
             filters.setAllowDrop(allowDrop);
-            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowDrop, filters.allowDrop));
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowDrop, filters.getAllowDrop()));
         }
     }
 
@@ -661,482 +675,471 @@ public class OzoneChunkAttachment {
 
     public boolean allowDrop(Entity entity) {
         var owner = this.owner;
-        return owner == null || filters.allowDrop.test(entity, owner.uuid);
+        return owner == null || filters.getAllowDrop().test(entity, owner.uuid);
     }
 
-    private static String cleanName(String string) {
-        return string.toLowerCase(Locale.ROOT).replaceAll("[^a-z]", "");
+    @Override
+    public PlayerFilter getAllowInteractWithWorkbenches() {
+        return filters.getAllowInteractWithWorkbenches();
     }
 
-    public static class Filters {
-        private EntityFilter allowExplosions;
-        private EntityFilter allowPlace;
-        private EntityFilter allowBreak;
-        private PlayerFilter allowInteractWithContainers;
-        private EntityFilter allowInteractWithDoors;
-        private PlayerFilter allowInteractWithRedstone;
-        private EntityFilter allowInteractWithRedstoneActivators;
-        private PlayerFilter allowInteractWithSigns;
-        private EntityFilter allowInteractWithOther;
-        private EntityFilter allowDrop;
-
-        public static final Codec<Filters> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            EntityFilter.CODEC.fieldOf("allowExplosions").forGetter(Filters::getAllowExplosions),
-            EntityFilter.CODEC.fieldOf("allowPlace").forGetter(Filters::getAllowPlace),
-            EntityFilter.CODEC.fieldOf("allowBreak").forGetter(Filters::getAllowBreak),
-            PlayerFilter.CODEC.fieldOf("allowInteractWithContainers").forGetter(Filters::getAllowInteractWithContainers),
-            EntityFilter.CODEC.fieldOf("allowInteractWithDoors").forGetter(Filters::getAllowInteractWithDoors),
-            PlayerFilter.CODEC.fieldOf("allowInteractWithRedstone").forGetter(Filters::getAllowInteractWithRedstone),
-            EntityFilter.CODEC.fieldOf("allowInteractWithRedstoneActivators").forGetter(Filters::getAllowInteractWithRedstoneActivators),
-            PlayerFilter.CODEC.fieldOf("allowInteractWithSigns").forGetter(Filters::getAllowInteractWithSigns),
-            EntityFilter.CODEC.fieldOf("allowInteractWithOther").forGetter(Filters::getAllowInteractWithOther),
-            EntityFilter.CODEC.fieldOf("allowDrop").forGetter(Filters::getAllowDrop)
-        ).apply(instance, Filters::new));
-        public static final StreamCodec<RegistryFriendlyByteBuf, Filters> STREAM_CODEC = new StreamCodec<>() {
-            public void encode(RegistryFriendlyByteBuf buffer, Filters value) {
-                buffer.writeEnum(value.allowExplosions);
-                buffer.writeEnum(value.allowPlace);
-                buffer.writeEnum(value.allowBreak);
-                buffer.writeEnum(value.allowInteractWithContainers);
-                buffer.writeEnum(value.allowInteractWithDoors);
-                buffer.writeEnum(value.allowInteractWithRedstone);
-                buffer.writeEnum(value.allowInteractWithRedstoneActivators);
-                buffer.writeEnum(value.allowInteractWithSigns);
-                buffer.writeEnum(value.allowInteractWithOther);
-                buffer.writeEnum(value.allowDrop);
-            }
-
-            public Filters decode(RegistryFriendlyByteBuf buffer) {
-                var value = new Filters(0);
-                value.allowExplosions = buffer.readEnum(EntityFilter.class);
-                value.allowPlace = buffer.readEnum(EntityFilter.class);
-                value.allowBreak = buffer.readEnum(EntityFilter.class);
-                value.allowInteractWithContainers = buffer.readEnum(PlayerFilter.class);
-                value.allowInteractWithDoors = buffer.readEnum(EntityFilter.class);
-                value.allowInteractWithRedstone = buffer.readEnum(PlayerFilter.class);
-                value.allowInteractWithRedstoneActivators = buffer.readEnum(EntityFilter.class);
-                value.allowInteractWithSigns = buffer.readEnum(PlayerFilter.class);
-                value.allowInteractWithOther = buffer.readEnum(EntityFilter.class);
-                value.allowDrop = buffer.readEnum(EntityFilter.class);
-                return value;
-            }
-        };
-
-        public Filters() {
-            reset();
-        }
-
-        private Filters(int unused) {}
-
-        public Filters(
-                EntityFilter allowExplosions, EntityFilter allowPlace,
-                EntityFilter allowBreak, PlayerFilter allowInteractWithContainers, EntityFilter allowInteractWithDoors,
-                PlayerFilter allowInteractWithRedstone, EntityFilter allowInteractWithRedstoneActivators,
-                PlayerFilter allowInteractWithSigns, EntityFilter allowInteractWithOther,
-                EntityFilter allowDrop) {
-            this.allowExplosions = allowExplosions;
-            this.allowPlace = allowPlace.atLeast(EntityFilter.OWNER_ONLY);
-            this.allowBreak = allowBreak.atLeast(EntityFilter.OWNER_ONLY);
-            this.allowInteractWithContainers = allowInteractWithContainers.atLeast(PlayerFilter.OWNER_ONLY);
-            this.allowInteractWithDoors = allowInteractWithDoors.atLeast(EntityFilter.OWNER_ONLY);
-            this.allowInteractWithRedstone = allowInteractWithRedstone.atLeast(PlayerFilter.OWNER_ONLY);
-            this.allowInteractWithRedstoneActivators = allowInteractWithRedstoneActivators.atLeast(EntityFilter.OWNER_ONLY);
-            this.allowInteractWithSigns = allowInteractWithSigns.atLeast(PlayerFilter.OWNER_ONLY);
-            this.allowInteractWithOther = allowInteractWithOther.atLeast(EntityFilter.OWNER_ONLY);
-            this.allowDrop = allowDrop.atLeast(EntityFilter.OWNER_ONLY);
-        }
-
-        public void reset() {
-            allowExplosions = EntityFilter.OWNER_AND_MOBS;
-            allowPlace = EntityFilter.FRIENDS_AND_MOBS;
-            allowBreak = EntityFilter.FRIENDS_AND_MOBS;
-            allowInteractWithContainers = PlayerFilter.OWNER_ONLY;
-            allowInteractWithDoors = EntityFilter.ANYONE;
-            allowInteractWithRedstone = PlayerFilter.ANYONE;
-            allowInteractWithRedstoneActivators = EntityFilter.ANYONE;
-            allowInteractWithSigns = PlayerFilter.OWNER_ONLY;
-            allowInteractWithOther = EntityFilter.FRIENDS_AND_MOBS;
-            allowDrop = EntityFilter.ANYONE;
-        }
-
-        public void assignFrom(Filters filters) {
-            if (filters == this) return;
-            allowExplosions = filters.allowExplosions;
-            allowPlace = filters.allowPlace;
-            allowBreak = filters.allowBreak;
-            allowInteractWithContainers = filters.allowInteractWithContainers;
-            allowInteractWithDoors = filters.allowInteractWithDoors;
-            allowInteractWithRedstone = filters.allowInteractWithRedstone;
-            allowInteractWithRedstoneActivators = filters.allowInteractWithRedstoneActivators;
-            allowInteractWithSigns = filters.allowInteractWithSigns;
-            allowInteractWithOther = filters.allowInteractWithOther;
-            allowDrop = filters.allowDrop;
-        }
-
-        public EntityFilter getAllowExplosions() {
-            return allowExplosions;
-        }
-
-        public void setAllowExplosions(EntityFilter allowExplosions) {
-            this.allowExplosions = allowExplosions;
-        }
-
-        public EntityFilter getAllowPlace() {
-            return allowPlace;
-        }
-
-        public void setAllowPlace(EntityFilter allowPlace) {
-            this.allowPlace = allowPlace.atLeast(EntityFilter.OWNER_ONLY);
-        }
-
-        public EntityFilter getAllowBreak() {
-            return allowBreak;
-        }
-
-        public void setAllowBreak(EntityFilter allowBreak) {
-            this.allowBreak = allowBreak.atLeast(EntityFilter.OWNER_ONLY);
-        }
-
-        public PlayerFilter getAllowInteractWithContainers() {
-            return allowInteractWithContainers;
-        }
-
-        public void setAllowInteractWithContainers(PlayerFilter allowInteractWithContainers) {
-            this.allowInteractWithContainers = allowInteractWithContainers.atLeast(PlayerFilter.OWNER_ONLY);
-        }
-
-        public EntityFilter getAllowInteractWithDoors() {
-            return allowInteractWithDoors;
-        }
-
-        public void setAllowInteractWithDoors(EntityFilter allowInteractWithDoors) {
-            this.allowInteractWithDoors = allowInteractWithDoors.atLeast(EntityFilter.OWNER_ONLY);
-        }
-
-        public PlayerFilter getAllowInteractWithRedstone() {
-            return allowInteractWithRedstone;
-        }
-
-        public void setAllowInteractWithRedstone(PlayerFilter allowInteractWithRedstone) {
-            this.allowInteractWithRedstone = allowInteractWithRedstone.atLeast(PlayerFilter.OWNER_ONLY);
-        }
-
-        public EntityFilter getAllowInteractWithRedstoneActivators() {
-            return allowInteractWithRedstoneActivators;
-        }
-
-        public void setAllowInteractWithRedstoneActivators(EntityFilter allowInteractWithRedstoneActivators) {
-            this.allowInteractWithRedstoneActivators = allowInteractWithRedstoneActivators.atLeast(EntityFilter.OWNER_ONLY);
-        }
-
-        public PlayerFilter getAllowInteractWithSigns() {
-            return allowInteractWithSigns;
-        }
-
-        public void setAllowInteractWithSigns(PlayerFilter allowInteractWithSigns) {
-            this.allowInteractWithSigns = allowInteractWithSigns.atLeast(PlayerFilter.OWNER_ONLY);
-        }
-
-        public EntityFilter getAllowInteractWithOther() {
-            return allowInteractWithOther;
-        }
-
-        public void setAllowInteractWithOther(EntityFilter allowInteractWithOther) {
-            this.allowInteractWithOther = allowInteractWithOther.atLeast(EntityFilter.OWNER_ONLY);
-        }
-
-        public EntityFilter getAllowDrop() {
-            return allowDrop;
-        }
-
-        public void setAllowDrop(EntityFilter allowDrop) {
-            this.allowDrop = allowDrop.atLeast(EntityFilter.OWNER_ONLY);
-        }
+    @Override
+    public void setAllowInteractWithWorkbenches(PlayerFilter allowInteractWithWorkbenches) {
+        filters.setAllowInteractWithWorkbenches(allowInteractWithWorkbenches);
     }
-    
-    public enum PlayerFilter implements StringRepresentable, BiPredicate<Player, UUID> {
-        NO_ONE((player, ownerUuid) -> false),
-        OWNER_ONLY((player, ownerUuid) -> player.getUUID().equals(ownerUuid)),
-        FRIENDS((player, ownerUuid) -> player.getUUID().equals(ownerUuid)),
-        ANYONE((player, ownerUuid) -> true);
 
-        public static final Codec<PlayerFilter> CODEC = StringRepresentable.fromEnum(PlayerFilter::values);
-        public static final StreamCodec<RegistryFriendlyByteBuf, PlayerFilter> STREAM_CODEC = new StreamCodec<>() {
-            public void encode(RegistryFriendlyByteBuf buffer, PlayerFilter value) {
-                buffer.writeEnum(value);
-            }
-
-            public PlayerFilter decode(RegistryFriendlyByteBuf buffer) {
-                return buffer.readEnum(PlayerFilter.class);
-            }
-        };
-        private static final Map<String, PlayerFilter> BY_NAME = Arrays.stream(values())
-            .collect(Collectors.toMap(e -> cleanName(e.name), e -> e));
-
-        private final String name = name().toLowerCase(Locale.ROOT);
-        private final BiPredicate<Player, UUID> predicate;
-
-        private PlayerFilter(BiPredicate<Player, UUID> predicate) {
-            this.predicate = predicate;
-        }
-
-        public PlayerFilter atLeast(PlayerFilter min) {
-            return this.compareTo(min) < 0? min : this;
-        }
-
-        @Override
-        public boolean test(Player player, UUID ownerUuid) {
-            return predicate.test(player, ownerUuid);
-        }
-
-        @Override
-        public String getSerializedName() {
-            return name;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public Component getDescription() {
-            return Component.translatable("argument.ozone_utilities.entity_filter." + name);
-        }
-
-        @Nullable
-        public static PlayerFilter getByName(@Nullable String friendlyName) {
-            return friendlyName == null? null : BY_NAME.get(cleanName(friendlyName));
-        }
-
-        public static Collection<String> getNames() {
-            return getNames(EnumSet.range(PlayerFilter.NO_ONE, PlayerFilter.ANYONE));
-        }
-
-        public static Collection<String> getNames(PlayerFilter min) {
-            return getNames(EnumSet.range(min, PlayerFilter.ANYONE));
-        }
-
-        public static Collection<String> getNames(Collection<PlayerFilter> filters) {
-            var list = new ArrayList<String>(filters.size());
-            
-            for (var playerFilter : filters) {
-                list.add(playerFilter.getName());
-            }
-            
-            return list;
+    public void setAllowInteractWithWorkbenches(ServerLevel level, PlayerFilter allowInteractWithWorkbenches) {
+        if (filters.getAllowInteractWithWorkbenches() != allowInteractWithWorkbenches) {
+            filters.setAllowInteractWithWorkbenches(allowInteractWithWorkbenches);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangePlayerFilter(GlobalChunkPos.of(level.dimension(), chunkPos), PlayerFilterField.allowInteractWithWorkbenches, filters.getAllowInteractWithWorkbenches()));
         }
     }
 
-    public enum EntityFilter implements StringRepresentable, BiPredicate<Entity, UUID> {
-        NO_ONE((entity, ownerUuid) -> false),
-        OWNER_ONLY((entity, ownerUuid) -> entity instanceof Player player && player.getUUID().equals(ownerUuid)),
-        OWNER_AND_MOBS((entity, ownerUuid) -> !(entity instanceof Player player) || player.getUUID().equals(ownerUuid)),
-        FRIENDS((entity, ownerUuid) -> entity instanceof Player player && player.getUUID().equals(ownerUuid)),
-        FRIENDS_AND_MOBS((entity, ownerUuid) -> !(entity instanceof Player player) || player.getUUID().equals(ownerUuid)),
-        PLAYERS((entity, ownerUuid) -> entity instanceof Player),
-        MOBS((entity, ownerUuid) -> !(entity instanceof Player)),
-        ANYONE((entity, ownerUuid) -> true);
-
-        public static final Codec<EntityFilter> CODEC = StringRepresentable.fromEnum(EntityFilter::values);
-        public static final StreamCodec<RegistryFriendlyByteBuf, EntityFilter> STREAM_CODEC = new StreamCodec<>() {
-            public void encode(RegistryFriendlyByteBuf buffer, EntityFilter value) {
-                buffer.writeEnum(value);
-            }
-
-            public EntityFilter decode(RegistryFriendlyByteBuf buffer) {
-                return buffer.readEnum(EntityFilter.class);
-            }
-        };
-        private static final Map<String, EntityFilter> BY_NAME = Arrays.stream(values())
-            .collect(Collectors.toMap(e -> cleanName(e.name), e -> e));
-
-        private final String name = name().toLowerCase(Locale.ROOT);
-        private final BiPredicate<Entity, UUID> predicate;
-
-        private EntityFilter(BiPredicate<Entity, UUID> predicate) {
-            this.predicate = predicate;
-        }
-
-        public EntityFilter atLeast(EntityFilter min) {
-            return this.compareTo(min) < 0? min : this;
-        }
-
-        @Override
-        public boolean test(Entity entity, UUID ownerUuid) {
-            return predicate.test(entity, ownerUuid);
-        }
-
-        @Override
-        public String getSerializedName() {
-            return name;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public Component getDescription() {
-            return Component.translatable("argument.ozone_utilities.entity_filter." + name);
-        }
-
-        @Nullable
-        public static EntityFilter getByName(@Nullable String friendlyName) {
-            return friendlyName == null? null : BY_NAME.get(cleanName(friendlyName));
-        }
-
-        public static Collection<String> getNames() {
-            return getNames(EnumSet.range(EntityFilter.NO_ONE, EntityFilter.ANYONE));
-        }
-
-        public static Collection<String> getNames(EntityFilter min) {
-            return getNames(EnumSet.range(min, EntityFilter.ANYONE));
-        }
-
-        public static Collection<String> getNames(Collection<EntityFilter> filters) {
-            var list = new ArrayList<String>(filters.size());
-            
-            for (var entityFilter : filters) {
-                list.add(entityFilter.getName());
-            }
-            
-            return list;
+    public void setAllowInteractWithWorkbenches(Level level, PlayerFilter allowInteractWithWorkbenches) {
+        if (level.isClientSide) {
+            setAllowInteractWithWorkbenches(allowInteractWithWorkbenches);
+        } else {
+            setAllowInteractWithWorkbenches((ServerLevel)level, allowInteractWithWorkbenches);
         }
     }
 
-    public enum BlockCategory implements BiPredicate<Entity, OzoneChunkAttachment> {
-        DOORS(OzoneBlockTags.DOORS, OzoneChunkAttachment::allowInteractWithDoors),
-        CONTAINERS(OzoneBlockTags.CONTAINERS, OzoneChunkAttachment::allowInteractWithContainers) {
-            @Override
-            public boolean has(BlockState state) {
-                return state.hasBlockEntity() && state.getBlock() != Blocks.ENDER_CHEST && super.has(state);
-            }
-        },
-        REDSTONE(OzoneBlockTags.REDSTONE, OzoneChunkAttachment::allowInteractWithRedstone),
-        REDSTONE_ACTIVATORS(OzoneBlockTags.REDSTONE_ACTIVATORS, OzoneChunkAttachment::allowInteractWithRedstoneActivators),
-        SIGNS(BlockTags.ALL_SIGNS, OzoneChunkAttachment::allowInteractWithSigns),
-        OTHER(OzoneBlockTags.OTHER, OzoneChunkAttachment::allowInteractWithOther);
-        
-        private final TagKey<Block> tag;
-        private final BiPredicate<OzoneChunkAttachment, Entity> predicate;
+    public boolean allowInteractWithWorkbenches(Player player) {
+        var owner = this.owner;
+        return owner == null || filters.getAllowInteractWithWorkbenches().test(player, owner.uuid);
+    }
 
-        private BlockCategory(TagKey<Block> tag, BiPredicate<OzoneChunkAttachment, Entity> predicate) {
-            this.tag = tag;
-            this.predicate = predicate;
-        }
+    @Override
+    public PlayerFilter getAllowInteractWithSpecial() {
+        return filters.getAllowInteractWithSpecial();
+    }
 
-        @Override
-        public boolean test(Entity entity, OzoneChunkAttachment claim) {
-            return predicate.test(claim, entity);
-        }
+    @Override
+    public void setAllowInteractWithSpecial(PlayerFilter allowInteractWithSpecial) {
+        filters.setAllowInteractWithSpecial(allowInteractWithSpecial);
+    }
 
-        public boolean isInteractAllowed(Entity entity, OzoneChunkAttachment claim) {
-            return predicate.test(claim, entity);
-        }
-
-        public boolean has(BlockState state) {
-            return state.is(tag);
-        }
-
-        private static final BlockCategory[] VALUES = values();
-        
-        @Nullable
-        public static Set<BlockCategory> of(BlockState state) {
-            EnumSet<BlockCategory> results = null;
-            for (var category : BlockCategory.VALUES) {
-                if (category.has(state)) {
-                    if (results == null) {
-                        results = EnumSet.noneOf(BlockCategory.class);
-                    }
-                    results.add(category);
-                }
-            }
-            return results == null? Set.of() : results;
+    public void setAllowInteractWithSpecial(ServerLevel level, PlayerFilter allowInteractWithSpecial) {
+        if (filters.getAllowInteractWithSpecial() != allowInteractWithSpecial) {
+            filters.setAllowInteractWithSpecial(allowInteractWithSpecial);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangePlayerFilter(GlobalChunkPos.of(level.dimension(), chunkPos), PlayerFilterField.allowInteractWithSpecial, filters.getAllowInteractWithSpecial()));
         }
     }
 
-    public static enum PlayerFilterField implements BiConsumer<OzoneChunkAttachment, PlayerFilter> {
-        allowInteractWithContainers(OzoneChunkAttachment::setAllowInteractWithContainers, PlayerFilter.OWNER_ONLY),
-        allowInteractWithRedstone(OzoneChunkAttachment::setAllowInteractWithRedstone, PlayerFilter.OWNER_ONLY),
-        allowInteractWithSigns(OzoneChunkAttachment::setAllowInteractWithSigns, PlayerFilter.OWNER_ONLY);
-        
-        public static final StreamCodec<RegistryFriendlyByteBuf, PlayerFilterField> STREAM_CODEC = new StreamCodec<>() {
-            public void encode(RegistryFriendlyByteBuf buffer, PlayerFilterField value) {
-                buffer.writeEnum(value);
-            }
-    
-            public PlayerFilterField decode(RegistryFriendlyByteBuf buffer) {
-                return buffer.readEnum(PlayerFilterField.class);
-            }
-        };
-    
-        private final BiConsumer<OzoneChunkAttachment, PlayerFilter> setter;
-        private final PlayerFilter min;
-    
-        private PlayerFilterField(BiConsumer<OzoneChunkAttachment, PlayerFilter> setter, PlayerFilter min) {
-            this.setter = setter;
-            this.min = min;
-        }
-
-        public PlayerFilter getMinValue() {
-            return min;
-        }
-    
-        public void set(OzoneChunkAttachment claim, PlayerFilter value) {
-            setter.accept(claim, value);
-        }
-    
-        @Override
-        public void accept(OzoneChunkAttachment claim, PlayerFilter value) {
-            setter.accept(claim, value);
-        }
-    
-        public BiConsumer<OzoneChunkAttachment, PlayerFilter> getSetter() {
-            return setter;
+    public void setAllowInteractWithSpecial(Level level, PlayerFilter allowInteractWithSpecial) {
+        if (level.isClientSide) {
+            setAllowInteractWithSpecial(allowInteractWithSpecial);
+        } else {
+            setAllowInteractWithSpecial((ServerLevel)level, allowInteractWithSpecial);
         }
     }
 
-    public static enum EntityFilterField implements BiConsumer<OzoneChunkAttachment, EntityFilter> {
-        allowExplosions(OzoneChunkAttachment::setAllowExplosions, EntityFilter.NO_ONE),
-        allowPlace(OzoneChunkAttachment::setAllowPlace, EntityFilter.OWNER_ONLY),
-        allowBreak(OzoneChunkAttachment::setAllowBreak, EntityFilter.OWNER_ONLY),
-        allowInteractWithDoors(OzoneChunkAttachment::setAllowInteractWithDoors, EntityFilter.OWNER_ONLY),
-        allowInteractWithRedstoneActivators(OzoneChunkAttachment::setAllowInteractWithRedstoneActivators, EntityFilter.OWNER_ONLY),
-        allowInteractWithOther(OzoneChunkAttachment::setAllowInteractWithOther, EntityFilter.OWNER_ONLY),
-        allowDrop(OzoneChunkAttachment::setAllowDrop, EntityFilter.OWNER_ONLY);
-    
-        public static final StreamCodec<RegistryFriendlyByteBuf, EntityFilterField> STREAM_CODEC = new StreamCodec<>() {
-            public void encode(RegistryFriendlyByteBuf buffer, EntityFilterField value) {
-                buffer.writeEnum(value);
-            }
-    
-            public EntityFilterField decode(RegistryFriendlyByteBuf buffer) {
-                return buffer.readEnum(EntityFilterField.class);
-            }
-        };
-    
-        private final BiConsumer<OzoneChunkAttachment, EntityFilter> setter;
-        private final EntityFilter min;
-    
-        private EntityFilterField(BiConsumer<OzoneChunkAttachment, EntityFilter> setter, EntityFilter min) {
-            this.setter = setter;
-            this.min = min;
-        }
+    public boolean allowInteractWithSpecial(Player player) {
+        var owner = this.owner;
+        return owner == null || filters.getAllowInteractWithSpecial().test(player, owner.uuid);
+    }
 
-        public EntityFilter getMinValue() {
-            return min;
+    @Override
+    public PlayerFilter getAllowInteractWithPlants() {
+        return filters.getAllowInteractWithPlants();
+    }
+
+    @Override
+    public void setAllowInteractWithPlants(PlayerFilter allowInteractWithPlants) {
+        filters.setAllowInteractWithPlants(allowInteractWithPlants);
+    }
+
+    public void setAllowInteractWithPlants(ServerLevel level, PlayerFilter allowInteractWithPlants) {
+        if (filters.getAllowInteractWithPlants() != allowInteractWithPlants) {
+            filters.setAllowInteractWithPlants(allowInteractWithPlants);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangePlayerFilter(GlobalChunkPos.of(level.dimension(), chunkPos), PlayerFilterField.allowInteractWithPlants, filters.getAllowInteractWithPlants()));
         }
-    
-        public void set(OzoneChunkAttachment claim, EntityFilter value) {
-            setter.accept(claim, value);
+    }
+
+    public void setAllowInteractWithPlants(Level level, PlayerFilter allowInteractWithPlants) {
+        if (level.isClientSide) {
+            setAllowInteractWithPlants(allowInteractWithPlants);
+        } else {
+            setAllowInteractWithPlants((ServerLevel)level, allowInteractWithPlants);
         }
-    
-        @Override
-        public void accept(OzoneChunkAttachment claim, EntityFilter value) {
-            setter.accept(claim, value);
+    }
+
+    public boolean allowInteractWithPlants(Player player) {
+        var owner = this.owner;
+        return owner == null || filters.getAllowInteractWithPlants().test(player, owner.uuid);
+    }
+
+    @Override
+    public PlayerFilter getAllowInteractWithVillagers() {
+        return filters.getAllowInteractWithVillagers();
+    }
+
+    @Override
+    public void setAllowInteractWithVillagers(PlayerFilter allowInteractWithVillagers) {
+        filters.setAllowInteractWithVillagers(allowInteractWithVillagers);
+    }
+
+    public void setAllowInteractWithVillagers(ServerLevel level, PlayerFilter allowInteractWithVillagers) {
+        if (filters.getAllowInteractWithVillagers() != allowInteractWithVillagers) {
+            filters.setAllowInteractWithVillagers(allowInteractWithVillagers);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangePlayerFilter(GlobalChunkPos.of(level.dimension(), chunkPos), PlayerFilterField.allowInteractWithVillagers, filters.getAllowInteractWithVillagers()));
         }
-    
-        public BiConsumer<OzoneChunkAttachment, EntityFilter> getSetter() {
-            return setter;
+    }
+
+    public void setAllowInteractWithVillagers(Level level, PlayerFilter allowInteractWithVillagers) {
+        if (level.isClientSide) {
+            setAllowInteractWithVillagers(allowInteractWithVillagers);
+        } else {
+            setAllowInteractWithVillagers((ServerLevel)level, allowInteractWithVillagers);
         }
+    }
+
+    public boolean allowInteractWithVillagers(Player player) {
+        var owner = this.owner;
+        return owner == null || filters.getAllowInteractWithVillagers().test(player, owner.uuid);
+    }
+
+    @Override
+    public EntityFilter getAllowHurtVillagers() {
+        return filters.getAllowHurtVillagers();
+    }
+
+    @Override
+    public void setAllowHurtVillagers(EntityFilter allowHurtVillagers) {
+        filters.setAllowHurtVillagers(allowHurtVillagers);
+    }
+
+    public void setAllowHurtVillagers(ServerLevel level, EntityFilter allowHurtVillagers) {
+        if (filters.getAllowHurtVillagers() != allowHurtVillagers) {
+            filters.setAllowHurtVillagers(allowHurtVillagers);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowHurtVillagers, filters.getAllowHurtVillagers()));
+        }
+    }
+
+    public void setAllowHurtVillagers(Level level, EntityFilter allowHurtVillagers) {
+        if (level.isClientSide) {
+            setAllowHurtVillagers(allowHurtVillagers);
+        } else {
+            setAllowHurtVillagers((ServerLevel)level, allowHurtVillagers);
+        }
+    }
+
+    public boolean allowHurtVillagers(Entity entity, @Nullable AbstractVillager hurtEntity) {
+        var owner = this.owner;
+        return owner == null || isOwner(entity, hurtEntity) || filters.getAllowHurtVillagers().test(entity, owner.uuid);
+    }
+
+    @Override
+    public EntityFilter getAllowHurtPets() {
+        return filters.getAllowHurtPets();
+    }
+
+    @Override
+    public void setAllowHurtPets(EntityFilter allowHurtPets) {
+        filters.setAllowHurtPets(allowHurtPets);
+    }
+
+    public void setAllowHurtPets(ServerLevel level, EntityFilter allowHurtPets) {
+        if (filters.getAllowHurtPets() != allowHurtPets) {
+            filters.setAllowHurtPets(allowHurtPets);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowHurtPets, filters.getAllowHurtPets()));
+        }
+    }
+
+    public void setAllowHurtPets(Level level, EntityFilter allowHurtPets) {
+        if (level.isClientSide) {
+            setAllowHurtPets(allowHurtPets);
+        } else {
+            setAllowHurtPets((ServerLevel)level, allowHurtPets);
+        }
+    }
+
+    public boolean allowHurtPets(Entity entity, @Nullable Entity hurtEntity) {
+        var owner = this.owner;
+        return owner == null || isOwner(entity, hurtEntity) || filters.getAllowHurtPets().test(entity, owner.uuid);
+    }
+
+    @Override
+    public EntityFilter getAllowHurtPassiveMobs() {
+        return filters.getAllowHurtPassiveMobs();
+    }
+
+    @Override
+    public void setAllowHurtPassiveMobs(EntityFilter allowHurtPassiveMobs) {
+        filters.setAllowHurtPassiveMobs(allowHurtPassiveMobs);
+    }
+
+    public void setAllowHurtPassiveMobs(ServerLevel level, EntityFilter allowHurtPassiveMobs) {
+        if (filters.getAllowHurtPassiveMobs() != allowHurtPassiveMobs) {
+            filters.setAllowHurtPassiveMobs(allowHurtPassiveMobs);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowHurtPassiveMobs, filters.getAllowHurtPassiveMobs()));
+        }
+    }
+
+    public void setAllowHurtPassiveMobs(Level level, EntityFilter allowHurtPassiveMobs) {
+        if (level.isClientSide) {
+            setAllowHurtPassiveMobs(allowHurtPassiveMobs);
+        } else {
+            setAllowHurtPassiveMobs((ServerLevel)level, allowHurtPassiveMobs);
+        }
+    }
+
+    public boolean allowHurtPassiveMobs(Entity entity, @Nullable Entity hurtEntity) {
+        var owner = this.owner;
+        return owner == null || isOwner(entity, hurtEntity) || filters.getAllowHurtPassiveMobs().test(entity, owner.uuid);
+    }
+
+    @Override
+    public EntityFilter getAllowHurtHostileMobs() {
+        return filters.getAllowHurtHostileMobs();
+    }
+
+    @Override
+    public void setAllowHurtHostileMobs(EntityFilter allowHurtHostileMobs) {
+        filters.setAllowHurtHostileMobs(allowHurtHostileMobs);
+    }
+
+    public void setAllowHurtHostileMobs(ServerLevel level, EntityFilter allowHurtHostileMobs) {
+        if (filters.getAllowHurtHostileMobs() != allowHurtHostileMobs) {
+            filters.setAllowHurtHostileMobs(allowHurtHostileMobs);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowHurtHostileMobs, filters.getAllowHurtHostileMobs()));
+        }
+    }
+
+    public void setAllowHurtHostileMobs(Level level, EntityFilter allowHurtHostileMobs) {
+        if (level.isClientSide) {
+            setAllowHurtHostileMobs(allowHurtHostileMobs);
+        } else {
+            setAllowHurtHostileMobs((ServerLevel)level, allowHurtHostileMobs);
+        }
+    }
+
+    public boolean allowHurtHostileMobs(Entity entity, @Nullable Entity hurtEntity) {
+        var owner = this.owner;
+        return owner == null || isOwner(entity, hurtEntity) || filters.getAllowHurtHostileMobs().test(entity, owner.uuid);
+    }
+
+    @Override
+    public PlayerFilter getAllowBreeding() {
+        return filters.getAllowBreeding();
+    }
+
+    @Override
+    public void setAllowBreeding(PlayerFilter allowBreeding) {
+        filters.setAllowBreeding(allowBreeding);
+    }
+
+    public void setAllowBreeding(ServerLevel level, PlayerFilter allowBreeding) {
+        if (filters.getAllowBreeding() != allowBreeding) {
+            filters.setAllowBreeding(allowBreeding);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangePlayerFilter(GlobalChunkPos.of(level.dimension(), chunkPos), PlayerFilterField.allowBreeding, filters.getAllowBreeding()));
+        }
+    }
+
+    public void setAllowBreeding(Level level, PlayerFilter allowBreeding) {
+        if (level.isClientSide) {
+            setAllowBreeding(allowBreeding);
+        } else {
+            setAllowBreeding((ServerLevel)level, allowBreeding);
+        }
+    }
+
+    public boolean allowBreeding(Player player, @Nullable Animal bredAnimal) {
+        var owner = this.owner;
+        return owner == null || isOwner(player, bredAnimal) ||  filters.getAllowBreeding().test(player, owner.uuid);
+    }
+
+    @Override
+    public PlayerFilter getAllowTaming() {
+        return filters.getAllowTaming();
+    }
+
+    @Override
+    public void setAllowTaming(PlayerFilter allowTaming) {
+        filters.setAllowTaming(allowTaming);
+    }
+
+    public void setAllowTaming(ServerLevel level, PlayerFilter allowTaming) {
+        if (filters.getAllowTaming() != allowTaming) {
+            filters.setAllowTaming(allowTaming);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangePlayerFilter(GlobalChunkPos.of(level.dimension(), chunkPos), PlayerFilterField.allowTaming, filters.getAllowTaming()));
+        }
+    }
+
+    public void setAllowTaming(Level level, PlayerFilter allowTaming) {
+        if (level.isClientSide) {
+            setAllowTaming(allowTaming);
+        } else {
+            setAllowTaming((ServerLevel)level, allowTaming);
+        }
+    }
+
+    public boolean allowTaming(Player player, @Nullable TamableAnimal tamableAnimal) {
+        var owner = this.owner;
+        return owner == null || filters.getAllowTaming().test(player, owner.uuid);
+    }
+
+    @Override
+    public PlayerFilter getAllowLeashing() {
+        return filters.getAllowLeashing();
+    }
+
+    @Override
+    public void setAllowLeashing(PlayerFilter allowLeashing) {
+        filters.setAllowLeashing(allowLeashing);
+    }
+
+    public void setAllowLeashing(ServerLevel level, PlayerFilter allowLeashing) {
+        if (filters.getAllowLeashing() != allowLeashing) {
+            filters.setAllowLeashing(allowLeashing);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangePlayerFilter(GlobalChunkPos.of(level.dimension(), chunkPos), PlayerFilterField.allowLeashing, filters.getAllowLeashing()));
+        }
+    }
+
+    public void setAllowLeashing(Level level, PlayerFilter allowLeashing) {
+        if (level.isClientSide) {
+            setAllowLeashing(allowLeashing);
+        } else {
+            setAllowLeashing((ServerLevel)level, allowLeashing);
+        }
+    }
+
+    public boolean allowLeashing(Player player, @Nullable Entity leashedEntity) {
+        var owner = this.owner;
+        return owner == null || isOwner(player, leashedEntity) || filters.getAllowLeashing().test(player, owner.uuid);
+    }
+
+    @Override
+    public PlayerFilter getAllowMilking() {
+        return filters.getAllowMilking();
+    }
+
+    @Override
+    public void setAllowMilking(PlayerFilter allowMilking) {
+        filters.setAllowMilking(allowMilking);
+    }
+
+    public void setAllowMilking(ServerLevel level, PlayerFilter allowMilking) {
+        if (filters.getAllowMilking() != allowMilking) {
+            filters.setAllowMilking(allowMilking);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangePlayerFilter(GlobalChunkPos.of(level.dimension(), chunkPos), PlayerFilterField.allowMilking, filters.getAllowMilking()));
+        }
+    }
+
+    public void setAllowMilking(Level level, PlayerFilter allowMilking) {
+        if (level.isClientSide) {
+            setAllowMilking(allowMilking);
+        } else {
+            setAllowMilking((ServerLevel)level, allowMilking);
+        }
+    }
+
+    public boolean allowMilking(Player player, @Nullable Entity milkedEntity) {
+        var owner = this.owner;
+        return owner == null || isOwner(player, milkedEntity) || filters.getAllowMilking().test(player, owner.uuid);
+    }
+
+    @Override
+    public EntityFilter getAllowSplashPotions() {
+        return filters.getAllowSplashPotions();
+    }
+
+    @Override
+    public void setAllowSplashPotions(EntityFilter allowSplashPotions) {
+        filters.setAllowSplashPotions(allowSplashPotions);
+    }
+
+    public void setAllowSplashPotions(ServerLevel level, EntityFilter allowSplashPotions) {
+        if (filters.getAllowSplashPotions() != allowSplashPotions) {
+            filters.setAllowSplashPotions(allowSplashPotions);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowSplashPotions, filters.getAllowSplashPotions()));
+        }
+    }
+
+    public void setAllowSplashPotions(Level level, EntityFilter allowSplashPotions) {
+        if (level.isClientSide) {
+            setAllowSplashPotions(allowSplashPotions);
+        } else {
+            setAllowSplashPotions((ServerLevel)level, allowSplashPotions);
+        }
+    }
+
+    public boolean allowSplashPotions(Entity entity) {
+        var owner = this.owner;
+        return owner == null || filters.getAllowSplashPotions().test(entity, owner.uuid);
+    }
+
+    @Override
+    public EntityFilter getAllowProjectiles() {
+        return filters.getAllowProjectiles();
+    }
+
+    @Override
+    public void setAllowProjectiles(EntityFilter allowProjectiles) {
+        filters.setAllowProjectiles(allowProjectiles);
+    }
+
+    public void setAllowProjectiles(ServerLevel level, EntityFilter allowProjectiles) {
+        if (filters.getAllowProjectiles() != allowProjectiles) {
+            filters.setAllowProjectiles(allowProjectiles);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangeEntityFilter(GlobalChunkPos.of(level.dimension(), chunkPos), EntityFilterField.allowProjectiles, filters.getAllowProjectiles()));
+        }
+    }
+
+    public void setAllowProjectiles(Level level, EntityFilter allowProjectiles) {
+        if (level.isClientSide) {
+            setAllowProjectiles(allowProjectiles);
+        } else {
+            setAllowProjectiles((ServerLevel)level, allowProjectiles);
+        }
+    }
+
+    public boolean allowProjectiles(Entity entity) {
+        var owner = this.owner;
+        return owner == null || filters.getAllowProjectiles().test(entity, owner.uuid);
+    }
+
+    @Override
+    public PlayerFilter getAllowEnderPearls() {
+        return filters.getAllowEnderPearls();
+    }
+
+    @Override
+    public void setAllowEnderPearls(PlayerFilter allowEnderPearls) {
+        filters.setAllowEnderPearls(allowEnderPearls);
+    }
+
+    public void setAllowEnderPearls(ServerLevel level, PlayerFilter allowEnderPearls) {
+        if (filters.getAllowEnderPearls() != allowEnderPearls) {
+            filters.setAllowEnderPearls(allowEnderPearls);
+            PacketDistributor.sendToPlayersTrackingChunk(level, chunkPos, new ChunkClaimPacket.ChangePlayerFilter(GlobalChunkPos.of(level.dimension(), chunkPos), PlayerFilterField.allowEnderPearls, filters.getAllowEnderPearls()));
+        }
+    }
+
+    public void setAllowEnderPearls(Level level, PlayerFilter allowEnderPearls) {
+        if (level.isClientSide) {
+            setAllowEnderPearls(allowEnderPearls);
+        } else {
+            setAllowEnderPearls((ServerLevel)level, allowEnderPearls);
+        }
+    }
+
+    public boolean allowEnderPearls(Player player) {
+        var owner = this.owner;
+        return owner == null || filters.getAllowEnderPearls().test(player, owner.uuid);
+    }
+
+    @Override
+    public Map<PlayerFilterField, PlayerFilter> getPlayerFilters() {
+        return filters.getPlayerFilters();
+    }
+
+    @Override
+    public Map<EntityFilterField, EntityFilter> getEntityFilters() {
+        return filters.getEntityFilters();
+    }
+
+    private static boolean isOwner(Entity owningEntity, @Nullable Entity entity) {
+        return entity instanceof OwnableEntity ownableEntity && owningEntity.getUUID().equals(ownableEntity.getOwnerUUID());
     }
 
     public static final class OwnerInfo {
@@ -1187,6 +1190,141 @@ public class OzoneChunkAttachment {
         @Override
         public boolean equals(Object obj) {
             return this == obj || obj instanceof OwnerInfo other && this.uuid.equals(other.uuid) && this.surveyorTableLocation.equals(other.surveyorTableLocation);
+        }
+    }
+
+    public enum BlockInteractionCategory {
+        DOORS(OzoneBlockTags.DOORS, OzoneChunkAttachment::allowInteractWithDoors),
+        CONTAINERS(OzoneBlockTags.CONTAINERS, OzoneChunkAttachment::allowInteractWithContainers) {
+            @Override
+            public boolean has(BlockState state) {
+                return state.hasBlockEntity() && state.getBlock() != Blocks.ENDER_CHEST && super.has(state);
+            }
+        },
+        WORKBENCHES(OzoneBlockTags.WORKBENCHES, OzoneChunkAttachment::allowInteractWithWorkbenches),
+        SPECIAL_INTERACTABLES(OzoneBlockTags.SPECIAL_INTERACTABLES, OzoneChunkAttachment::allowInteractWithSpecial),
+        CONFIGURABLE(OzoneBlockTags.CONFIGURABLE, OzoneChunkAttachment::allowConfiguration),
+        REDSTONE(OzoneBlockTags.REDSTONE, OzoneChunkAttachment::allowInteractWithRedstone),
+        SIGNS(BlockTags.ALL_SIGNS, OzoneChunkAttachment::allowInteractWithSigns),
+        PLANTS(OzoneBlockTags.PLANTS, OzoneChunkAttachment::allowInteractWithPlants),
+        OTHER(OzoneBlockTags.OTHER, OzoneChunkAttachment::allowInteractWithOther);
+        
+        private final TagKey<Block> tag;
+        private final TriPredicate<OzoneChunkAttachment, BlockState, Entity> predicate;
+
+        private <E extends Entity> BlockInteractionCategory(TagKey<Block> tag, BiPredicate<OzoneChunkAttachment, E> predicate) {
+            this(tag, (OzoneChunkAttachment claim, @Nullable BlockState state, E entity) -> predicate.test(claim, entity));
+        }
+
+        private <E extends Entity> BlockInteractionCategory(TagKey<Block> tag, TriPredicate<OzoneChunkAttachment, BlockState, E> predicate) {
+            this.tag = tag;
+            this.predicate = (TriPredicate<OzoneChunkAttachment, BlockState, Entity>) predicate;
+        }
+
+        public boolean isInteractAllowed(@Nullable BlockState blockState, Entity entity, OzoneChunkAttachment claim) {
+            try {
+                return predicate.test(claim, blockState, entity);
+            } catch (ClassCastException e) {
+                return false;
+            }
+        }
+
+        public boolean has(BlockState state) {
+            return state.is(tag);
+        }
+        
+        public static Set<BlockInteractionCategory> of(BlockState state) {
+            EnumSet<BlockInteractionCategory> results = null;
+            for (var category : BlockInteractionCategory.values()) {
+                if (category.has(state)) {
+                    if (results == null) {
+                        results = EnumSet.of(category);
+                    } else {
+                        results.add(category);
+                    }
+                }
+            }
+            return results == null? Set.of() : results;
+        }
+    }
+
+    public enum EntityHurtCategory {
+        VILLAGERS(OzoneEntityTypeTags.VILLAGERS, OzoneChunkAttachment::allowHurtVillagers),
+        PETS(OzoneEntityTypeTags.PETS, OzoneChunkAttachment::allowHurtPets) {
+            @Override
+            public boolean has(Entity entity, Entity attacker) {
+                return entity instanceof TamableAnimal tamableAnimal && tamableAnimal.isTame() || entity.getType().is(tag);
+            }
+        },
+        PASSIVE_MOBS(OzoneEntityTypeTags.PASSIVE_MOBS, OzoneChunkAttachment::allowHurtPassiveMobs) {
+            @Override
+            public boolean has(Entity entity, @Nullable Entity attacker) {
+                if (!(entity instanceof LivingEntity livingEntity)) {
+                    return entity.getType().is(tag);
+                }
+                if (livingEntity instanceof NeutralMob neutralMob) {
+                    return neutralMob.getTarget() == null || entity.getType().is(tag);
+                } else {
+                    return !(livingEntity instanceof Enemy) || entity.getType().is(tag);
+                }
+            }
+        },
+        HOSTILE_MOBS(OzoneEntityTypeTags.HOSTILE_MOBS, OzoneChunkAttachment::allowHurtHostileMobs) {
+            @Override
+            public boolean has(Entity entity, @Nullable Entity attacker) {
+                if (!(entity instanceof LivingEntity livingEntity)) {
+                    return entity.getType().is(tag);
+                }
+                if (livingEntity instanceof NeutralMob neutralMob) {
+                    var target = neutralMob.getTarget();
+                    if (target == null) return entity.getType().is(tag);
+                    return target.is(attacker) || target instanceof Player || attacker instanceof Player && (isOwner(attacker, target) || attacker != null && PASSIVE_MOBS.has(attacker, null)) || entity.getType().is(tag);
+                } else {
+                    return livingEntity instanceof Enemy || entity.getType().is(tag);
+                }
+            }
+        };
+
+        protected final TagKey<EntityType<?>> tag;
+        private final TriPredicate<OzoneChunkAttachment, Entity, Entity> predicate;
+
+        private <E1 extends Entity> EntityHurtCategory(TagKey<EntityType<?>> tag, BiPredicate<OzoneChunkAttachment, E1> predicate) {
+            this(tag, (OzoneChunkAttachment claim, E1 entity1, @Nullable Entity entity2) -> predicate.test(claim, entity1));
+        }
+
+        private <E1 extends Entity, E2 extends Entity> EntityHurtCategory(TagKey<EntityType<?>> tag, TriPredicate<OzoneChunkAttachment, E1, E2> predicate) {
+            this.tag = tag;
+            this.predicate = (TriPredicate<OzoneChunkAttachment, Entity, Entity>) predicate;
+        }
+
+        public boolean isInteractAllowed(Entity entity, OzoneChunkAttachment claim) {
+            return isInteractAllowed(entity, null, claim);
+        }
+
+        public boolean isInteractAllowed(Entity entity, @Nullable Entity actedUponEntity, OzoneChunkAttachment claim) {
+            try {
+                return predicate.test(claim, entity, actedUponEntity);
+            } catch (ClassCastException e) {
+                return false;
+            }
+        }
+
+        public boolean has(Entity entity, @Nullable Entity attacker) {
+            return entity.getType().is(tag);
+        }
+
+        public static Set<EntityHurtCategory> of(Entity entity, @Nullable Entity attacker) {
+            EnumSet<EntityHurtCategory> results = null;
+            for (var category : EntityHurtCategory.values()) {
+                if (category.has(entity, attacker)) {
+                    if (results == null) {
+                        results = EnumSet.of(category);
+                    } else {
+                        results.add(category);
+                    }
+                }
+            }
+            return results == null? Set.of() : results;
         }
     }
 }
